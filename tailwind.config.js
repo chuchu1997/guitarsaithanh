@@ -5,7 +5,7 @@ module.exports = {
   content: [
     "./src/frontend/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: "class", // hỗ trợ .dark
+  darkMode: "class", 
   theme: {
     extend: {
       colors: {
