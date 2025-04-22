@@ -24,23 +24,7 @@ const formSchema = z.object({
 })
 
 export function ChromeProfileForm() {
-  const [folderPath, setFolderPath] = useState<string>("");
-  const handleSelectFolder = async () => {
-    try {
-      // Ensure TypeScript knows that window.showDirectoryPicker is a function
-      const showDirectoryPicker = (window as any).showDirectoryPicker;
-      if (showDirectoryPicker) {
-        const dirHandle = await showDirectoryPicker();
-        const folderName = dirHandle.name;
-        setFolderPath(folderName);
-      } else {
-        alert("Trình duyệt của bạn không hỗ trợ API chọn thư mục.");
-      }
-    } catch (error) {
-      console.error("Lỗi khi chọn thư mục:", error);
-      alert("Đã xảy ra lỗi khi chọn thư mục. Vui lòng thử lại.");
-    }
-  };
+ 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,18 +82,12 @@ export function ChromeProfileForm() {
               {/* Hiển thị đường dẫn đã chọn */}
               <Input
                 {...field}
-                value={folderPath || field.value}
-                placeholder="Chọn đường dẫn thư mục..."
+                value={ field.value}
+                placeholder="Đường dẫn profile ..."
                 readOnly // Để không cho phép người dùng chỉnh sửa trực tiếp
                 className="mr-2"
               />
-              <Button
-                type="button"
-                onClick={handleSelectFolder}
-                className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
-              >
-                Chọn Thư Mục
-              </Button>
+          
             </div>
               </FormControl>
               

@@ -15,6 +15,7 @@ import SoundBoardView from "./views/sound-board/sound-board";
 import SoundListView from "./views/sound-board/list/sound-list";
 import SoundBoardCreateView from "./views/sound-board/create/sound-board-create";
 import SoundboardEditView from "./views/sound-board/edit/sound-board-edit";
+import SettingView from "./views/setting/setting";
 
 const root = createRoot(document.body);
 
@@ -43,6 +44,7 @@ root.render(
             <Route path="create" element={<SoundBoardCreateView />}></Route>
             <Route path="edit/:id" element={<SoundboardEditView />}></Route>
           </Route>
+          <Route path="/setting" element={<SettingView />} />
         </Routes>
       </main>
     </div>

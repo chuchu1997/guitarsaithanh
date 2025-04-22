@@ -24,6 +24,7 @@ export const AppSidebar = () => {
           label="Âm thanh bè livestream "
           to="/sound"
         />
+        <SidebarItem icon={Settings} label="Cài đặt  " to="/setting" />
       </nav>
 
       <div className="mt-auto text-sm text-gray-400 pt-6 border-t border-gray-700">
