@@ -16,19 +16,21 @@ import SoundListView from "./views/sound-board/list/sound-list";
 import SoundBoardCreateView from "./views/sound-board/create/sound-board-create";
 import SoundboardEditView from "./views/sound-board/edit/sound-board-edit";
 import SettingView from "./views/setting/setting";
+import { Toaster } from "react-hot-toast";
 
 const root = createRoot(document.body);
 
 root.render(
   <HashRouter>
     <div className="flex h-screen w-screen overflow-hidden">
+      <Toaster />
       <aside className="w-64 bg-gray-900 text-white p-4">
         <AppSidebar />
       </aside>
       <main className="flex-1 bg-gray-100 p-6 overflow-auto">
         <Routes>
           <Route path="/" element={<DashboardView />} />
-          <Route path="chrome" element={<ChromeView />}>
+          <Route path="/chrome" element={<ChromeView />}>
             {/* Nested Routes */}
             <Route index element={<ChromeListView />} />
             <Route path="create" element={<ChromeCreateView />} />

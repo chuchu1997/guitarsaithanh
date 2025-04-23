@@ -1,17 +1,19 @@
 /** @format */
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button"; // Giả sử bạn đã có Button từ ShadcnUI
 import { Input } from "@/components/ui/input"; // Giả sử bạn đã có Input từ ShadcnUI
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import useSettings from "@/hooks/use-settings";
+import toast from "react-hot-toast";
 
 // Schema của Zod
 const formSchema = z.object({
   profilePath: z.string().min(1, "Vui lòng nhập đường dẫn lưu profile."),
   soundPath: z.string().min(1, "Vui lòng nhập đường dẫn lưu âm thanh."),
+  imagePath: z.string().min(1, "Vui lòng nhập đường dẫn lưu hình ảnh ."),
 });
 
 const SettingsView = () => {
@@ -23,19 +25,28 @@ const SettingsView = () => {
   } = useForm({
     resolver: zodResolver(formSchema),
   });
-  const { profilePath, soundPath, updateProfilePath, updateSoundPath } =
-    useSettings();
+  const {
+    profilePath,
+    soundPath,
+    imagePath,
+    updateProfilePath,
+    updateSoundPath,
+    updateImagePath,
+  } = useSettings();
 
   useEffect(() => {
     setValue("profilePath", profilePath ?? "");
     setValue("soundPath", soundPath ?? "");
-  }, [profilePath, soundPath, setValue]);
+    setValue("imagePath", imagePath ?? "");
+  }, [profilePath, soundPath, setValue, imagePath]);
 
   const onSubmit = (data: any) => {
     // Lưu lại đường dẫn, có thể lưu vào LocalStorage, API, hoặc Redux state
 
     updateProfilePath(data.profilePath);
     updateSoundPath(data.soundPath);
+    updateImagePath(data.imagePath);
+    toast.success("Đã cập nhật đường dẫn thành công !!");
   };
 
   return (
@@ -79,6 +90,25 @@ const SettingsView = () => {
           {errors.soundPath && (
             <span className="text-red-500 text-sm">
               {errors.soundPath.message}
+            </span>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="imagePath"
+            className="block text-sm font-medium text-gray-700">
+            Đường dẫn lưu hình ảnh
+          </label>
+          <Input
+            id="imagePath"
+            {...register("imagePath")}
+            placeholder="Nhập đường dẫn lưu hình ảnh "
+            className="mt-1 w-full"
+          />
+          {errors.imagePath && (
+            <span className="text-red-500 text-sm">
+              {errors.imagePath.message}
             </span>
           )}
         </div>

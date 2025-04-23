@@ -7,7 +7,7 @@ const ChromeCreateView = () => {
   return (
     <>
       <HeadingComponent title="Tạo Profile Chrome Mới" />
-      <ChromeProfileForm />
+      <ChromeProfileForm initialData={null} />
     </>
   );
 };

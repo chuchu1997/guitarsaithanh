@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-
+import useChromeStore from "@/hooks/use-chromes";
 const LivestreamSeedingView = () => {
   const [comments, setComments] = useState("");
   const [delay, setDelay] = useState("3");
   const [fileName, setFileName] = useState("");
+  const chromeStore = useChromeStore();
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       setFileName(e.target.files[0].name);
@@ -17,20 +19,29 @@ const LivestreamSeedingView = () => {
     }
   };
 
-  const handleStart = () => {
-    const commentList = comments
-      .split("\n")
-      .map((c) => c.trim())
-      .filter((c) => c.length > 0);
-
-    if (commentList.length === 0) {
-      alert("Vui lòng nhập ít nhất một nội dung seeding.");
-      return;
-    }
-
+  const handleStart = async () => {
+    // const commentList = comments
+    //   .split("\n")
+    //   .map((c) => c.trim())
+    //   .filter((c) => c.length > 0);
+    // if (commentList.length === 0) {
+    //   alert("Vui lòng nhập ít nhất một nội dung seeding.");
+    //   return;
+    // }
     // TODO: Trigger Chrome tabs + seeding logic
-    console.log("Seeding với các bình luận:", commentList);
-    console.log("Delay mỗi bình luận:", delay, "giây");
+    // console.log("Seeding với các bình luận:", commentList);
+    // console.log("Delay mỗi bình luận:", delay, "giây");
+    // await backend.openChromeWithProfile(chromeStore.items[0].username,)
+    const profile = chromeStore.items[0];
+    console.log("PROFILE", profile);
+
+    const driverID = await backend.openChromeWithProfile(
+      profile.pathProfile,
+      profile.proxy,
+      "https://happyfurniture.logtech.vn"
+    );
+    console.log("DR ID", driverID);
+    // console.log("ITYEM", ); profilePath: string, proxyPath?: string, linkOpenChrome?
   };
 
   return (
@@ -87,6 +98,11 @@ const LivestreamSeedingView = () => {
         <p className="text-sm text-gray-500 mt-1">
           Khoảng thời gian ngẫu nhiên giữa các comment của từng tài khoản.
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <label className="font-medium">Link livestream</label>
+        <Input type="text" placeholder="Nhập link livestream" />
       </div>
 
       {/* Bắt đầu seeding */}
