@@ -39,6 +39,12 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       setLoading(false);
     }
   };
+  const onOpenChrome = async () => {
+    await chromeStore.openChromeProfile(data.id);
+  };
+  const onCloseChrome = async () => {
+    await chromeStore.closeChromeProfile(data.id);
+  };
   return (
     <>
       <AlertModal
@@ -52,6 +58,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       />
 
       <ActionDropdown
+        onOpenChrome={onOpenChrome}
+        onCloseChrome={onCloseChrome}
         onCopy={onCopy}
         onEdit={onEdit}
         onDelete={onDelete}

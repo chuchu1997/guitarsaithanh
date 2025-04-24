@@ -1,4 +1,4 @@
-import { ipcMain, IpcMainInvokeEvent } from "electron";
+import { ipcMain, IpcMainInvokeEvent ,app,BrowserWindow} from "electron";
 import path from "path";
 import fs from "fs";
 
@@ -7,7 +7,6 @@ import { Builder, WebDriver} from 'selenium-webdriver';
 
 import chrome from "selenium-webdriver/chrome";
 import chromedriver from "chromedriver";
-import { v4 as uuidv4 } from "uuid";
 
 interface DriverWithProfile {
   driver: WebDriver;  // WebDriver gốc
@@ -16,10 +15,12 @@ interface DriverWithProfile {
 const drivers: Record<string, DriverWithProfile> = {}; // Lưu driver với ID duy nhất
 
 async function openChromeProfile({
+  id,
   profilePath,
   proxyPath,
   linkOpenChrome
 }: {
+  id:string,
   profilePath: string;
   proxyPath?: string;
   linkOpenChrome?: string;
@@ -27,6 +28,7 @@ async function openChromeProfile({
   if (!fs.existsSync(profilePath)) {
     throw new Error("Profile không tồn tại.");
   }
+
 
   const options = new chrome.Options();
   options.addArguments(`--user-data-dir=${profilePath}`);
@@ -48,31 +50,45 @@ async function openChromeProfile({
     .build();
 
   await driver.get(linkOpenChrome || 'https://google.com');
-  const driverId = uuidv4();
 
-  drivers[driverId] = { driver, profilePath }; // Hoặc profileName nếu bạn dùng theo tên
 
-  return { driverId };
+  drivers[id] = { driver, profilePath }; // Hoặc profileName nếu bạn dùng theo tên
+
+  return { driverId:id };
 }
-const isProfileOpen = (profilePath: string): string | null => {
-  // Kiểm tra trong tất cả drivers đã mở
-  const existingDriverId = Object.keys(drivers).find((driverId) => {
-    const driver = drivers[driverId];
-    // Bạn có thể lưu profilePath vào WebDriver để so sánh
-    return driver.profilePath === profilePath;
-  });
 
-  return existingDriverId || null; // Trả về ID driver nếu tìm thấy, hoặc null nếu không tìm thấy
-};
-
+ipcMain.on('before-quit',async()=>{
+  console.log("DO SOMETHING !!");
+  
+})
 
 ipcMain.handle(
   "node-version",
   (event: IpcMainInvokeEvent, msg: string): string => {
     console.log(event);
     console.log(msg);
-
     return process.versions.node;
+  }
+);
+ipcMain.handle(
+  "close-chrome-profile",
+ async (event: IpcMainInvokeEvent, id: string): Promise<boolean> => {
+    const target = drivers[id];
+    if (!target) {
+      console.warn(`Không tìm thấy driver với ID: ${id}`);
+      return true;
+    }
+
+    try {
+      console.log("TIM THAY TARGET",target)
+      await target.driver.quit(); // Đóng trình duyệt
+      delete drivers[id]; // Xoá khỏi danh sách
+      console.log(`Đã đóng Chrome profile với ID: ${id}`);
+      return false;
+    } catch (err) {
+      console.error(`Lỗi khi đóng Chrome profile ${id}:`, err);
+      return true;
+    }
   }
 );
 
@@ -94,7 +110,7 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('open-chrome-multiple-profile', async (event, profiles: Array<{ profilePath: string, proxyPath?: string, linkOpenChrome: string }>): Promise<string[]> => {
+ipcMain.handle('open-chrome-multiple-profile', async (event, profiles: Array<{ id:string,profilePath: string, proxyPath?: string, linkOpenChrome: string }>): Promise<string[]> => {
   const driverIds: string[] = [];
 
   const promises = profiles.map(async (profile) => {
@@ -111,8 +127,8 @@ ipcMain.handle('open-chrome-multiple-profile', async (event, profiles: Array<{ p
 });
 
 
-ipcMain.handle('open-chrome-profile', async (event: IpcMainInvokeEvent, { profilePath, proxyPath,linkOpenChrome }: { profilePath: string, profileName: string, proxyPath?: string ,linkOpenChrome?:string}):Promise<string> => {
-  const { driverId } = await openChromeProfile({ profilePath, proxyPath, linkOpenChrome });
+ipcMain.handle('open-chrome-profile', async (event: IpcMainInvokeEvent, {id, profilePath, proxyPath,linkOpenChrome }: {id:string, profilePath: string, profileName: string, proxyPath?: string ,linkOpenChrome?:string}):Promise<string> => {
+  const { driverId } = await openChromeProfile({id, profilePath, proxyPath, linkOpenChrome });
   return driverId;
 });
 
@@ -152,7 +168,7 @@ ipcMain.handle(
 
       // Mở trang test và chờ vài giây để Chrome ghi dữ liệu profile
 
-      await driver.sleep(3000); // Có thể điều chỉnh
+      // await driver.sleep(3000); // Có thể điều chỉnh
 
       await driver.quit(); // Quan trọng để đảm bảo profile được lưu
 
@@ -163,3 +179,21 @@ ipcMain.handle(
     }
   }
 );
+
+
+let isQuitting = false; // Cờ kiểm tra nếu app đã đang thoát
+app.on('before-quit', async (event) => {
+  if (isQuitting) return;
+  isQuitting = true; // Đánh dấu là ứng dụng đang thoát
+  event.preventDefault();
+
+  for (const driverId in drivers) {
+    const target = drivers[driverId];
+    await target.driver.quit();
+    delete drivers[driverId]; // Xoá khỏi danh sách
+  
+  }
+  app.quit();
+});
+
+

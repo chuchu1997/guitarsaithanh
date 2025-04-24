@@ -10,6 +10,8 @@ export interface ChromeProfile {
   username: string;
   proxy: string;
   pathProfile: string;
+  isOpen: boolean;
+  injectLiveStreamID?: string;
 }
 
 export interface ChromeStore {
@@ -18,12 +20,24 @@ export interface ChromeStore {
   updateItem: (data: ChromeProfile) => void;
   removeItem: (id: string) => void;
   getChromeProfileWithID: (id: string) => ChromeProfile;
+  openChromeProfile: (id: string) => void;
+  closeChromeProfile: (id: string) => void;
+  resetStateChromeProfile: () => void;
 }
 
 const useChromeStore = create(
   persist<ChromeStore>(
     (set, get) => ({
       items: [],
+      resetStateChromeProfile: () => {
+        set((state) => ({
+          items: state.items.map((item) => ({
+            ...item,
+            isOpen: false,
+            injectLiveStreamID: "",
+          })),
+        }));
+      },
       getChromeProfileWithID: (id: string) => {
         return get().items.find((item) => item.id === id);
       },
@@ -47,6 +61,35 @@ const useChromeStore = create(
           toast.success("Đã tạo profile này !!");
         }
       },
+      openChromeProfile: async (id: string) => {
+        const store = get();
+        const targetProfile = store.items.find((item) => item.id === id);
+
+        if (targetProfile && !targetProfile.isOpen) {
+          await backend.openChromeWithProfile(
+            targetProfile.id,
+            targetProfile.pathProfile,
+            targetProfile.proxy
+          );
+          const updatedProfile = { ...targetProfile, isOpen: true }; // 👈 clone và thay đổi
+          store.updateItem(updatedProfile); // 👈 trigger update
+
+          return updatedProfile;
+        }
+      },
+      closeChromeProfile: async (id: string) => {
+        const store = get();
+        const result = await backend.closeChrome(id); // result: boolean = true/false
+
+        const targetProfile = store.items.find((item) => item.id === id);
+        if (!targetProfile) return;
+
+        const updatedProfile = { ...targetProfile, isOpen: result }; // ✅ không mutate
+
+        store.updateItem(updatedProfile); // ✅ trigger update trong Zustand
+
+        console.log("TARGET", updatedProfile);
+      },
       updateItem: async (data: ChromeProfile) => {
         const updateItems = get().items.map((item) => {
           if (item.id === data.id) {
@@ -55,7 +98,6 @@ const useChromeStore = create(
           return item;
         });
         set({ items: updateItems });
-        toast.success("Đã cập nhật thông tin của Profile");
       },
       removeItem: async (id: string) => {
         const itemToDelete = get().items.find((item) => item.id === id);

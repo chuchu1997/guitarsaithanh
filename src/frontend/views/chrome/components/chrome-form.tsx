@@ -35,6 +35,7 @@ const formSchema = z.object({
   username: z.string().min(2),
   proxy: z.string(),
   pathProfile: z.string(),
+  isOpen: z.boolean().optional(),
 });
 
 export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
@@ -57,6 +58,7 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
           ...initialData,
         }
       : {
+          isOpen: false,
           id: uuidv4(),
           username: "",
           proxy: "",
@@ -71,6 +73,7 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
     try {
       setLoading(true);
       const profile: ChromeProfile = {
+        isOpen: values.isOpen,
         id: values.id,
         username: values.username,
         proxy: values.proxy ?? "",
@@ -96,7 +99,6 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
     try {
       setLoading(true);
       chromeStore.removeItem(initialData.id);
-
       navigate("/chrome");
     } catch (err) {
       toast.error(

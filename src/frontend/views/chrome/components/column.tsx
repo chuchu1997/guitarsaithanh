@@ -12,7 +12,7 @@ import { CellAction } from "./cell-action";
 export type ChromeColumn = {
   id: string;
   name: string;
-  status: string;
+  isOpen: boolean;
   proxy: string;
   path: string;
 };
@@ -37,7 +37,7 @@ export const columns: ColumnDef<ChromeColumn>[] = [
   {
     accessorKey: "status",
     header: "Trạng thái",
-    cell: ({ row }) => row.original.status,
+    cell: ({ row }) => <>{row.original.isOpen ? "Đang mở " : "Đang tắt"}</>,
   },
   {
     id: "actions",

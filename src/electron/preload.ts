@@ -10,10 +10,10 @@ export const backend = {
     // Truyền tham số dưới dạng đối tượng
     return await ipcRenderer.invoke("create-chrome-profile", { profileName, profilePath });
   },
-  openChromeWithProfile: async (profilePath: string,proxyPath?:string,linkOpenChrome?:string): Promise<string> => {
+  openChromeWithProfile: async (id:string,profilePath: string,proxyPath?:string,linkOpenChrome?:string): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
   
-    return await ipcRenderer.invoke("open-chrome-profile", {  profilePath,proxyPath ,linkOpenChrome });
+    return await ipcRenderer.invoke("open-chrome-profile", {id:id,  profilePath,proxyPath ,linkOpenChrome });
   },
 
   openMultipleProfilesWithLink: async (profiles: Array<{ profilePath: string, proxyPath?: string }>,linkSeeding:string): Promise<WebDriver[]> => {
@@ -23,16 +23,13 @@ export const backend = {
       const driver = await ipcRenderer.invoke("open-chrome-profile", {  profilePath: profile.profilePath, proxyPath: profile.proxyPath ,linkOpenChrome:linkSeeding});
       drivers.push(driver);  // Lưu driver vào mảng
     });
-
     await Promise.all(promises); // Đảm bảo tất cả các promises đã hoàn thành trước khi trả về
-
     console.log('Đã mở tất cả các profile và lưu driver.');
 
     return drivers; // Trả về danh sách driver để có thể điều khiển sau
   },
-  closeChrome: async (driver: WebDriver): Promise<void> => {
-    await driver.quit()
-    console.log('Đã đóng profile.');
+  closeChrome: async (id:string): Promise<boolean> => {
+   return await ipcRenderer.invoke("close-chrome-profile",id)
   },
 
   deleteChromeProfile:async(pathProfile:string):Promise<boolean>=>

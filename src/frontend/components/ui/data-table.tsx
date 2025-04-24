@@ -1,6 +1,5 @@
 "use client";
 import { Button } from "@/components/ui/button";
-
 import {
   ColumnDef,
   flexRender,
@@ -10,9 +9,9 @@ import {
   ColumnFiltersState,
   getFilteredRowModel,
   SortingState,
+  RowSelectionState,
 } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
-
 import {
   Table,
   TableBody,
@@ -24,20 +23,31 @@ import {
 import React from "react";
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+  columns: ColumnDef<TData, TValue>[]; 
   data: TData[];
   searchKey: string;
+  onSelectionChange?: (selected: TData[]) => void; // callback gửi dữ liệu ra ngoài
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
+  onSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(() => {
+    // Initialize selection state based on the isCheckChooseChrome property
+    const initialSelection: RowSelectionState = {};
+    data.forEach((item, index) => {
+      // Check if the item has isCheckChooseChrome property and it's true
+      if ((item as any).isCheckChooseChrome) {
+        initialSelection[index] = true;
+      }
+    });
+    return initialSelection;
+  });
   const table = useReactTable({
     data,
     columns,
@@ -48,6 +58,22 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       columnFilters,
+      rowSelection,
+    },
+    onRowSelectionChange: (updater) => {
+      const newRowSelection =
+      typeof updater === "function" ? updater(rowSelection) : updater;
+    setRowSelection(newRowSelection);
+    
+    // Use the newRowSelection directly to determine selected rows
+    const selectedRows = Object.keys(newRowSelection)
+      .filter(key => newRowSelection[key])
+      .map(key => {
+        const rowIndex = parseInt(key);
+        return table.getRowModel().rows[rowIndex]?.original;
+      })
+      .filter(Boolean); // Filter out any undefined entries
+    onSelectionChange?.(selectedRows);
     },
   });
 
@@ -73,10 +99,7 @@ export function DataTable<TData, TValue>({
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -92,20 +115,14 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   Chưa có thông tin !!
                 </TableCell>
               </TableRow>
@@ -128,7 +145,7 @@ export function DataTable<TData, TValue>({
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Tiếp 
+          Tiếp
         </Button>
       </div>
     </div>
