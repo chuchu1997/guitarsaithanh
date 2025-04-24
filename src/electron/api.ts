@@ -110,7 +110,7 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('open-chrome-multiple-profile', async (event, profiles: Array<{ id:string,profilePath: string, proxyPath?: string, linkOpenChrome: string }>): Promise<string[]> => {
+ipcMain.handle('open-chrome-multiple-profile', async (event, profiles: Array<{ id:string,profilePath: string, proxyPath?: string }>): Promise<string[]> => {
   const driverIds: string[] = [];
 
   const promises = profiles.map(async (profile) => {

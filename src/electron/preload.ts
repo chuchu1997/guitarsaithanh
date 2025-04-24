@@ -16,17 +16,10 @@ export const backend = {
     return await ipcRenderer.invoke("open-chrome-profile", {id:id,  profilePath,proxyPath ,linkOpenChrome });
   },
 
-  openMultipleProfilesWithLink: async (profiles: Array<{ profilePath: string, proxyPath?: string }>,linkSeeding:string): Promise<WebDriver[]> => {
-    const drivers: WebDriver[] = []; // Lưu tất cả các driver
-
-    const promises = profiles.map(async (profile) => {
-      const driver = await ipcRenderer.invoke("open-chrome-profile", {  profilePath: profile.profilePath, proxyPath: profile.proxyPath ,linkOpenChrome:linkSeeding});
-      drivers.push(driver);  // Lưu driver vào mảng
-    });
-    await Promise.all(promises); // Đảm bảo tất cả các promises đã hoàn thành trước khi trả về
-    console.log('Đã mở tất cả các profile và lưu driver.');
-
-    return drivers; // Trả về danh sách driver để có thể điều khiển sau
+  openMultipleProfilesWithLink: async (profiles: Array<{ id:string,profilePath: string, proxyPath?: string }>): Promise<string[]> => {
+  return  await ipcRenderer.invoke("open-chrome-multiple-profile",{profiles})
+  
+    // await ipcRenderer.invoke("open-chrome-multiple-profile", {  profilePath: profile.profilePath, proxyPath: profile.proxyPath });
   },
   closeChrome: async (id:string): Promise<boolean> => {
    return await ipcRenderer.invoke("close-chrome-profile",id)
