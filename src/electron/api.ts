@@ -4,7 +4,12 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { Buffer } from "buffer";
-import puppeteer, { Browser, Page, launch } from "puppeteer-core";
+import puppeteer, {
+  Browser,
+  ElementHandle,
+  Page,
+  launch,
+} from "puppeteer-core";
 import chromeLauncher from "chrome-launcher";
 const CHROME_PATH =
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
@@ -78,10 +83,10 @@ async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
-      `--window-size=${width},${height}`,
-      `--window-position=${x},${y}`,
     ];
 
+    // `--window-size=${width},${height}`,
+    // `--window-position=${x},${y}`,
     if (proxyPath) {
       const [ip, port] = proxyPath.split(":");
       args.push(`--proxy-server=http://${ip}:${port}`);
@@ -122,25 +127,46 @@ async function enterTextIntoContentEditable(
   selector: string,
   text: string
 ) {
-  await page.waitForSelector(selector, { timeout: 10000 });
+  // Đảm bảo rằng phần tử đã sẵn sàng để tương tác
+  await page.waitForSelector(selector, { visible: true, timeout: 0 });
+
+  // Xóa văn bản cũ trong contenteditable
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (el) el.innerHTML = ""; // Clear existing text
+  }, selector);
+
+  // Chọn phần tử cần tương tác
   const el = await page.$(selector);
+
   if (!el) throw new Error("Không tìm thấy input");
 
+  // Click vào phần tử trước khi gõ
   await el.click();
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000)); // Đợi một chút cho chắc chắn
 
+  // Gõ văn bản vào phần tử contenteditable
   await el.type(text);
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000)); // Thêm thời gian chờ sau khi gõ
 
-  const postBtnSelector = "div[data-e2e='comment-post']";
-  await page.waitForSelector(postBtnSelector, { timeout: 5000 });
-  const postBtn = await page.$(postBtnSelector);
-  if (!postBtn) throw new Error("Không tìm thấy nút post");
-  await postBtn.click();
+  // Đợi nút gửi comment xuất hiện
+  const postSvgSelector = 'svg path[d^="M45.7321 7.00001"]';
+  await page.waitForSelector(postSvgSelector, { timeout: 0 });
 
+  const postBtn = await page.$(postSvgSelector);
+  if (!postBtn) throw new Error("Không tìm thấy icon gửi comment");
+
+  const clickableDiv = await postBtn.evaluateHandle((el) => {
+    // Đi lên thẻ cha có thể click được
+    return el.closest("div[tabindex='0']");
+  });
+
+  if (!clickableDiv)
+    throw new Error("Không tìm thấy div có thể click gửi comment");
+
+  await (clickableDiv as ElementHandle<Element>).click();
   console.log("✅ Comment đã gửi!");
 }
-
 ipcMain.handle("open-chrome-profile", async (_e, params) => {
   const { driverId } = await openChromeProfile(params);
   return driverId;
@@ -163,17 +189,26 @@ ipcMain.handle(
     }
   ) => {
     const shuffled = shuffleArray(chromeProfileIds);
+
     for (const profileId of shuffled) {
       const instance = browsers[profileId];
+
+      console.log("P-P", instance.profilePath);
       if (!instance) continue;
 
       const { page } = instance;
 
-      const url = page.url();
-      if (url !== linkLiveStream) {
-        await page.goto(linkLiveStream);
-      }
+      // browsers[id] = { browser, page, profilePath };
+      console.log("PAGE", page);
 
+      // const url = page.url();
+      // if (url !== linkLiveStream) {
+
+      // }
+      await page.goto(linkLiveStream, {
+        waitUntil: "networkidle2",
+        timeout: 0,
+      });
       const commentList = comments
         .split(/[,\n]/)
         .map((c) => c.trim())
@@ -191,7 +226,7 @@ ipcMain.handle(
       );
 
       console.log(`⏳ Đợi ${delay}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, delay)); // dùng delay từ props
     }
   }
 );
