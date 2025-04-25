@@ -1,20 +1,88 @@
 /** @format */
 
-import { ipcMain, IpcMainInvokeEvent, app, BrowserWindow } from "electron";
+import { ipcMain, IpcMainInvokeEvent, app } from "electron";
 import path from "path";
 import fs from "fs";
 
-import { Builder, By, WebDriver } from "selenium-webdriver";
-
+import { Builder, By, until, WebDriver, ProxyConfig } from "selenium-webdriver";
+import { ServiceBuilder } from "selenium-webdriver/chrome";
 import chrome from "selenium-webdriver/chrome";
 import chromedriver from "chromedriver";
+import { electron } from "process";
 
 interface DriverWithProfile {
   driver: WebDriver; // WebDriver gốc
   profilePath: string; // Thông tin profilePath
 }
 const drivers: Record<string, DriverWithProfile> = {}; // Lưu driver với ID duy nhất
+async function createProxyAuthExtension(
+  proxyHost: any,
+  proxyPort: any,
+  username: any,
+  password: any
+) {
+  // Create a temporary directory for the extension
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const tempDir = fs.mkdtempSync(
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    path.join(require("os").tmpdir(), "proxy-ext-")
+  );
 
+  // Create manifest.json
+  const manifest = {
+    version: "1.0.0",
+    manifest_version: 2,
+    name: "Chrome Proxy",
+    permissions: [
+      "proxy",
+      "tabs",
+      "unlimitedStorage",
+      "storage",
+      "webRequest",
+      "webRequestBlocking",
+    ],
+    background: {
+      scripts: ["background.js"],
+    },
+  };
+
+  // Create background.js
+  const background = `
+    var config = {
+      mode: "fixed_servers",
+      rules: {
+        singleProxy: {
+          scheme: "http",
+          host: "${proxyHost}",
+          port: parseInt(${proxyPort})
+        }
+      }
+    };
+    chrome.proxy.settings.set({value: config, scope: "regular"}, function() {});
+    function callbackFn(details) {
+      return {
+        authCredentials: {
+          username: "${username}",
+          password: "${password}"
+        }
+      };
+    }
+    chrome.webRequest.onAuthRequired.addListener(
+      callbackFn,
+      {urls: ["<all_urls>"]},
+      ['blocking']
+    );
+  `;
+
+  // Write the files
+  fs.writeFileSync(
+    path.join(tempDir, "manifest.json"),
+    JSON.stringify(manifest)
+  );
+  fs.writeFileSync(path.join(tempDir, "background.js"), background);
+
+  return tempDir;
+}
 async function enterTextIntoContentEditable(
   driver: WebDriver,
   selector: string,
@@ -126,6 +194,9 @@ function getRandomUserAgent(): string {
 
   return `Mozilla/5.0 (${os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeMajor}.0.${chromeMinor}.${chromeBuild} Safari/537.36`;
 }
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 function shuffleArray<T>(array: T[]): T[] {
   const shuffledArray = [...array]; // Tạo bản sao của mảng để tránh thay đổi mảng gốc
   for (let i = shuffledArray.length - 1; i > 0; i--) {
@@ -175,10 +246,54 @@ async function openChromeProfile({
     userAgent = getRandomUserAgent();
     fs.writeFileSync(userAgentPath, userAgent, "utf-8");
   }
-  console.log("PROXY PATH", proxyPath);
+
   if (proxyPath) {
-    options.addArguments(`--proxy-server=${proxyPath}`);
+    const proxyHostname = "160.250.167.126"; // Replace with your actual proxy IP
+    const proxyPort = "33606"; // Replace with your actual proxy port
+    const proxyUsername = "2970md2970mdkhr24237253";
+    const proxyPassword = "khr2423722";
+    const extensionPath = await createProxyAuthExtension(
+      proxyHostname,
+      proxyPort,
+      proxyUsername,
+      proxyPassword
+    );
+    options.addArguments(`--proxy-server=http://${proxyHostname}:${proxyPort}`);
+    options.addArguments(`--load-extension=${extensionPath}`);
+
+    // const folderName = `proxy_auth_extension_${Date.now()}`;
+    // const extensionPath = createProxyAuthExtension(
+    //   "160.250.167.126:33606",
+    //   "2970md2970mdkhr24237253",
+    //   "khr2423722",
+    //   folderName
+    // );
+    // await delay(300);
+
+    // const options = new chrome.Options();
+    const myProxy = "160.250.167.126:33606:2970md2970mdkhr24237253:";
+    options.addArguments(
+      `--proxy-server=http://${proxyUsername}:${proxyPassword}@${proxyHostname}:${proxyPort}`
+    );
+
+    // options.addArguments(`--proxy-server=http://160.250.167.126:33606`);
+
+    // options.addArguments(`--load-extension=${extensionPath}`);
+    // options.addArguments("--disable-extensions-except=" + extensionPath);
+    // const proxyUrl = `http://${proxyUsername}:${proxyPassword}@${proxyHostname}:${proxyPort}`;
+
+    // options.addArguments(`--proxy-server=${proxyUrl}`);
+
+    // Create the proxy string with username and password
+
+    // options.addArguments(`--proxy-server=http://2970md2970mdkhr24237253:khr2423722@160.250.167.126:33606`);
+    // options.addArguments(
+    //   `--proxy-server=http://${username}:${password}@${proxyUrl}`
+    // );
+
+    // options.addArguments("--proxy-bypass-list=<-loopback>");
   }
+
   // 👉 Tính toán lưới layout
 
   const total = totalProfile;
@@ -198,18 +313,27 @@ async function openChromeProfile({
   options.addArguments(`--window-position=${x},${y}`);
 
   const service = new chrome.ServiceBuilder(chromedriver.path);
-  const driver = await new Builder()
-    .forBrowser("chrome")
-    .setChromeService(service)
-    .setChromeOptions(options)
-    .build();
+  try {
+    const driver = await new Builder()
+      .forBrowser("chrome")
 
-  await driver.get(linkOpenChrome || "https://www.tiktok.com/");
-  // const { driverId } = await openChromeProfile(profile);
-  // driverIds.push(driverId);
-  drivers[id] = { driver, profilePath }; // Hoặc profileName nếu bạn dùng theo tên
+      .setChromeService(service)
+      .setChromeOptions(options)
+      .build();
 
-  return { driverId: id };
+    await driver.get(linkOpenChrome || "https://www.tiktok.com/");
+    // const { driverId } = await openChromeProfile(profile);
+    // driverIds.push(driverId);
+    drivers[id] = { driver, profilePath }; // Hoặc profileName nếu bạn dùng theo tên
+
+    return { driverId: id };
+  } catch (err) {
+    console.error("Error:", err);
+  }
+  //  finally {
+  //   await driver.quit();
+  //   fs.rmSync(extensionPath, { recursive: true, force: true });
+  // }
 }
 
 ipcMain.handle(
