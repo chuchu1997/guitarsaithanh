@@ -20,7 +20,7 @@ export interface ChromeStore {
   updateItem: (data: ChromeProfile) => void;
   removeItem: (id: string) => void;
   getChromeProfileWithID: (id: string) => ChromeProfile;
-  openChromeProfile: (id: string) => void;
+  openChromeProfile: (id: string, totalProfile?: number) => void;
   closeChromeProfile: (id: string) => void;
   resetStateChromeProfile: () => void;
 }
@@ -61,7 +61,8 @@ const useChromeStore = create(
           toast.success("Đã tạo profile này !!");
         }
       },
-      openChromeProfile: async (id: string) => {
+
+      openChromeProfile: async (id: string, totalProfile?: number) => {
         const store = get();
         const targetProfile = store.items.find((item) => item.id === id);
 
@@ -69,8 +70,11 @@ const useChromeStore = create(
           await backend.openChromeWithProfile(
             targetProfile.id,
             targetProfile.pathProfile,
-            targetProfile.proxy
+            targetProfile.proxy,
+            "",
+            totalProfile
           );
+
           const updatedProfile = { ...targetProfile, isOpen: true }; // 👈 clone và thay đổi
           store.updateItem(updatedProfile); // 👈 trigger update
 

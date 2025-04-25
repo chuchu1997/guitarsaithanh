@@ -10,23 +10,26 @@ export const backend = {
     // Truyền tham số dưới dạng đối tượng
     return await ipcRenderer.invoke("create-chrome-profile", { profileName, profilePath });
   },
-  openChromeWithProfile: async (id:string,profilePath: string,proxyPath?:string,linkOpenChrome?:string): Promise<string> => {
+  openChromeWithProfile: async (id:string,profilePath: string,proxyPath?:string,linkOpenChrome?:string,totalProfile?:number): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
-  
-    return await ipcRenderer.invoke("open-chrome-profile", {id:id,  profilePath,proxyPath ,linkOpenChrome });
+    return await ipcRenderer.invoke("open-chrome-profile", {id:id,  profilePath,proxyPath ,linkOpenChrome ,totalProfile});
   },
-
-  openMultipleProfilesWithLink: async (profiles: Array<{ id:string,profilePath: string, proxyPath?: string }>): Promise<string[]> => {
-  return  await ipcRenderer.invoke("open-chrome-multiple-profile",{profiles})
-  
-    // await ipcRenderer.invoke("open-chrome-multiple-profile", {  profilePath: profile.profilePath, proxyPath: profile.proxyPath });
-  },
+ 
   closeChrome: async (id:string): Promise<boolean> => {
    return await ipcRenderer.invoke("close-chrome-profile",id)
   },
 
   deleteChromeProfile:async(pathProfile:string):Promise<boolean>=>
-    await ipcRenderer.invoke("delete-chrome-profile",pathProfile)
+    await ipcRenderer.invoke("delete-chrome-profile",pathProfile),
+
+  seedingLiveStream :async(chromeProfileIds:string[],comments:string , delay:number,linkLiveStream:string):Promise<void>=>
+  
+    await ipcRenderer.invoke("seeding-livestream", {
+      chromeProfileIds,
+      comments,
+      delay,
+      linkLiveStream,
+    })
 };
 
 contextBridge.exposeInMainWorld("backend", backend);

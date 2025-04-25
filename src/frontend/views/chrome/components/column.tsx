@@ -4,6 +4,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./cell-action";
+import { Checkbox } from "@/components/ui/checkbox";
 // import { CellAction } from "./cell-action";
 // import Image from "next/image";
 
@@ -18,6 +19,26 @@ export type ChromeColumn = {
 };
 
 export const columns: ColumnDef<ChromeColumn>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected()}
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Chọn tất cả"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Chọn dòng"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+
   {
     accessorKey: "name",
     header: "Tên Nick Tiktok Chrome ",

@@ -1,36 +1,76 @@
+/** @format */
+
 import { DataTable } from "@/components/ui/data-table";
 
-
-import {ChromeColumn, columns} from "../components/column";
-
+import { ChromeColumn, columns } from "../components/column";
 
 import useChromeStore from "@/hooks/use-chromes";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-const ChromeListView = ()=>{
-    const [loading,setLoading] = useState(false);
+import { Chrome, X } from "lucide-react";
+const ChromeListView = () => {
+  const [loading, setLoading] = useState(false);
+  const chromeStore = useChromeStore();
 
-    const items = useChromeStore((state) => state.items); // TRỰC TIẾP chọn `items`
-    const formatColumn: ChromeColumn[] = items.map((item) => ({
-        id: item.id,
-        name: item.username,
-        proxy: item.proxy,
-        path: item.pathProfile,
-        isOpen: item.isOpen,
-      }));
-    const handleOpenMultipleChromeProfile = ()=>{
-      // useChromeStore().
-      // backend.openMultipleProfilesWithLink(formatColumn.map(({ path, proxy }) => ({ profilePath: path, proxyPath: proxy })))
+  const items = useChromeStore((state) => state.items); // TRỰC TIẾP chọn `items`
+  const formatColumn: ChromeColumn[] = items.map((item) => ({
+    id: item.id,
+    name: item.username,
+    proxy: item.proxy,
+    path: item.pathProfile,
+    isOpen: item.isOpen,
+  }));
+  const [selected, setSelected] = useState<ChromeColumn[]>([]);
+  function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  const handleOpenMultipleChromeProfile = async () => {
+    setLoading(true);
+    for (const select of selected) {
+      await chromeStore.openChromeProfile(select.id, selected.length);
+      await delay(200); // ⏱️ Delay 500ms sau mỗi lần mở
     }
+    setLoading(false);
+  };
+  const handleCloseMultipleProfile = async () => {
+    await Promise.all(
+      selected.map((select) => chromeStore.closeChromeProfile(select.id))
+    );
+  };
 
-    return <>
-    <h1>Danh sách Nick Tiktok Chrome </h1>
-    <DataTable searchKey="name" columns={columns} data={formatColumn}></DataTable>
-    <div className ="flex justify-center">
-     {items.length > 0 && <Button>Mở toàn bộ nick </Button>}
-    </div>
-    
+  return (
+    <>
+      <h1>Danh sách Nick Tiktok Chrome </h1>
+      {selected.length > 0 && (
+        <div className="flex justify-center items-center gap-x-2">
+          <Button
+            variant="default"
+            className="gap-1"
+            disabled={loading}
+            onClick={handleOpenMultipleChromeProfile}>
+            <Chrome className="w-4 h-4" />
+            Mở Chrome Profile
+          </Button>
+          <Button
+            disabled={loading}
+            variant="destructive"
+            className="gap-1"
+            onClick={handleCloseMultipleProfile}>
+            <X className="w-4 h-4" />
+            Đóng Chrome Profile
+          </Button>
+        </div>
+      )}
+
+      <DataTable
+        onSelectionChange={(selected) => {
+          setSelected(selected);
+        }}
+        searchKey="name"
+        columns={columns}
+        data={formatColumn}></DataTable>
     </>
-}
+  );
+};
 
 export default ChromeListView;

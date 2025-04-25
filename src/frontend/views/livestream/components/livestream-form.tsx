@@ -106,16 +106,27 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
     e.target.value = "";
   };
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     console.log("✅ Dữ liệu gửi:", data);
-    if (selected) {
-      selected.map((select) => {
-        const value = chromeStore.getChromeProfileWithID(select.id);
-        value.injectLiveStreamID = id;
-        chromeStore.updateItem(value);
-      });
-      console.log("CHROME ITEM", chromeStore.items);
 
+    if (!selected || selected.length === 0) {
+      toast.error("Vui lòng chọn profile");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Cập nhật profile với livestream ID
+      for (const select of selected) {
+        const profile = chromeStore.getChromeProfileWithID(select.id);
+        if (profile) {
+          profile.injectLiveStreamID = id;
+          chromeStore.updateItem(profile);
+        }
+      }
+
+      // Cập nhật thông tin livestream
       liveStreamStore.update({
         id: liveTarget.id,
         linkLive: data.link,
@@ -123,11 +134,21 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
         comments: data.comments,
         delay: data.delay,
       });
-    } else {
-      toast.error("Vui lòng chọn profile");
+      // Gửi danh sách chrome profile để seeding livestream
+      const profileIds = selected.map((select) => select.id);
+      await backend.seedingLiveStream(
+        profileIds,
+        data.comments,
+        data.delay,
+        data.link
+      );
+      toast.success("✅Đã seeding livestream");
+    } catch (error) {
+      console.error("❌ Lỗi khi gửi dữ liệu:", error);
+      toast.error("Đã xảy ra lỗi khi bắt đầu seeding");
+    } finally {
+      setLoading(false);
     }
-
-    // Gửi dữ liệu đi, hoặc xử lý tiếp...
   };
 
   return (
@@ -215,7 +236,9 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
           />
 
           <div className="text-right">
-            <Button type="submit">Bắt Đầu Seeding</Button>
+            <Button type="submit" disabled={loading}>
+              Bắt Đầu Seeding
+            </Button>
           </div>
         </form>
       </Form>
