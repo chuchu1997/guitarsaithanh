@@ -175,6 +175,7 @@ async function openChromeProfile({
     userAgent = getRandomUserAgent();
     fs.writeFileSync(userAgentPath, userAgent, "utf-8");
   }
+  console.log("PROXY PATH", proxyPath);
   if (proxyPath) {
     options.addArguments(`--proxy-server=${proxyPath}`);
   }

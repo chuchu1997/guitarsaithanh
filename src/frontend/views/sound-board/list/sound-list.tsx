@@ -22,71 +22,83 @@ type Sound = {
 };
 
 const SoundListView = () => {
-  const funSounds: Sound[] = [
-    {
-      id: 1,
-      label: "Vỗ tay",
-      file: "/sounds/clap.mp3",
-      icon: <HandPlatter className="w-10 h-10" />,
-    },
-    {
-      id: 2,
-      label: "Cười lớn",
-      file: "/sounds/laugh.mp3",
-      icon: <Laugh className="w-10 h-10" />,
-    },
-    {
-      id: 3,
-      label: "Quá đỉnh",
-      file: "/sounds/fire.mp3",
-      icon: <Flame className="w-10 h-10" />,
-    },
-    {
-      id: 4,
-      label: "Thả tim",
-      file: "/sounds/heart.mp3",
-      icon: <Heart className="w-10 h-10" />,
-    },
-    {
-      id: 5,
-      label: "Sấm sét",
-      file: "/sounds/zap.mp3",
-      icon: <Zap className="w-10 h-10" />,
-    },
+  const TabList = [
+    { value: "st-x1-pro", label: "St X1 Pro", content: "FUN" },
+    { value: "x1 pro", label: "X1 Pro", content: "ACTION" },
+    { value: "x4-pro", label: "X4", content: "FUN" },
+    { value: "x6 pro", label: "X6", content: "ACTION" },
+    { value: "x7 pro", label: "X7", content: "ACTION" },
+    { value: "diy pro", label: "Diy", content: "ACTION" },
+    { value: "sata", label: "Sata", content: "ACTION" },
+    { value: "thanhly", label: "Thanh lý", content: "ACTION" },
+    // Có thể thêm các tab khác ở đây
   ];
 
-  const actionSounds: Sound[] = [
-    {
-      id: 6,
-      label: "Chốt đơn",
-      file: "/sounds/chot-don.mp3",
-      icon: <Volume2 className="w-10 h-10" />,
-    },
-    {
-      id: 7,
-      label: "Thông báo",
-      file: "/sounds/bell.mp3",
-      icon: <Bell className="w-10 h-10" />,
-    },
-    {
-      id: 8,
-      label: "Quảng bá",
-      file: "/sounds/megaphone.mp3",
-      icon: <Megaphone className="w-10 h-10" />,
-    },
-    {
-      id: 9,
-      label: "Thành tích",
-      file: "/sounds/trophy.mp3",
-      icon: <Trophy className="w-10 h-10" />,
-    },
-    {
-      id: 10,
-      label: "5 sao",
-      file: "/sounds/star.mp3",
-      icon: <Star className="w-10 h-10" />,
-    },
-  ];
+  // const funSounds: Sound[] = [
+  //   {
+  //     id: 1,
+  //     label: "Vỗ tay",
+  //     file: "/sounds/clap.mp3",
+  //     icon: <HandPlatter className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 2,
+  //     label: "Cười lớn",
+  //     file: "/sounds/laugh.mp3",
+  //     icon: <Laugh className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 3,
+  //     label: "Quá đỉnh",
+  //     file: "/sounds/fire.mp3",
+  //     icon: <Flame className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 4,
+  //     label: "Thả tim",
+  //     file: "/sounds/heart.mp3",
+  //     icon: <Heart className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 5,
+  //     label: "Sấm sét",
+  //     file: "/sounds/zap.mp3",
+  //     icon: <Zap className="w-10 h-10" />,
+  //   },
+  // ];
+
+  // const actionSounds: Sound[] = [
+  //   {
+  //     id: 6,
+  //     label: "Chốt đơn",
+  //     file: "/sounds/chot-don.mp3",
+  //     icon: <Volume2 className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 7,
+  //     label: "Thông báo",
+  //     file: "/sounds/bell.mp3",
+  //     icon: <Bell className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 8,
+  //     label: "Quảng bá",
+  //     file: "/sounds/megaphone.mp3",
+  //     icon: <Megaphone className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 9,
+  //     label: "Thành tích",
+  //     file: "/sounds/trophy.mp3",
+  //     icon: <Trophy className="w-10 h-10" />,
+  //   },
+  //   {
+  //     id: 10,
+  //     label: "5 sao",
+  //     file: "/sounds/star.mp3",
+  //     icon: <Star className="w-10 h-10" />,
+  //   },
+  // ];
 
   const SoundGrid = ({ sounds }: { sounds: Sound[] }) => {
     const [currentSound, setCurrentSound] = useState<HTMLAudioElement | null>(
@@ -119,22 +131,24 @@ const SoundListView = () => {
   };
   return (
     <Tabs defaultValue="fun" className="w-full">
-      <TabsList className="flex justify-center gap-2 mb-4">
-        <TabsTrigger value="fun" className="text-base px-4">
-          Vui nhộn
-        </TabsTrigger>
-        <TabsTrigger value="action" className="text-base px-4">
-          Hành động
-        </TabsTrigger>
+      <TabsList className="flex space-x-4">
+        {TabList.map((tab) => (
+          <TabsTrigger
+            key={tab.value}
+            value={tab.value}
+            className="text-base px-4">
+            {tab.label}
+          </TabsTrigger>
+        ))}
       </TabsList>
 
-      <TabsContent value="fun">
-        <SoundGrid sounds={funSounds} />
-      </TabsContent>
-
-      <TabsContent value="action">
-        <SoundGrid sounds={actionSounds} />
-      </TabsContent>
+      {TabList.map((tab) => (
+        <TabsContent key={tab.value} value={tab.value}>
+          {tab.content}
+          {/* {tab.content === "FUN" && <SoundGrid sounds={funSounds} />} */}
+          {/* {tab.content === "ACTION" && <SoundGrid sounds={actionSounds} />} */}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 };
