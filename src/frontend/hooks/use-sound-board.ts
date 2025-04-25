@@ -29,11 +29,18 @@ export const CategorySoundData: CategorySound[] = [
 export interface SoundBoardStore {
   items: SoundBoardInfo[];
   addItem: (data: SoundBoardInfo) => void;
+  deleteItem: (name: string) => void;
 }
 const useSoundBoardStore = create(
   persist<SoundBoardStore>(
     (set, get) => ({
       items: [],
+      deleteItem: (name: string) => {
+        const currentItems = get().items;
+        const newItems = currentItems.filter((item) => item.name !== name);
+        set({ items: newItems });
+        toast.success("Đã xoá sound!");
+      },
       addItem: (data: SoundBoardInfo) => {
         const currentItems = get().items;
         const existItem = currentItems.find((item) => item.id === data.id);

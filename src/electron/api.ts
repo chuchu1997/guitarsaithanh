@@ -213,6 +213,14 @@ ipcMain.handle("delete-chrome-profile", (_e, profilePath: string) => {
   return false;
 });
 
+ipcMain.handle("load-audio", async (_event, filePath: string) => {
+  const audioBuffer = fs.readFileSync(filePath);
+  const base64Audio = audioBuffer.toString("base64");
+  const ext = path.extname(filePath).substring(1); // "mp3"
+  const dataUrl = `data:audio/${ext};base64,${base64Audio}`;
+  return dataUrl;
+});
+
 ipcMain.handle(
   "create-chrome-profile",
   async (_e, { profileName, profilePath }) => {
@@ -232,6 +240,7 @@ ipcMain.handle(
 
     const page = await browser.newPage();
     await page.goto("https://example.com");
+
     await new Promise((r) => setTimeout(r, 3000)); // Đợi Chrome ghi dữ liệu profile
     await browser.close();
 

@@ -6,30 +6,56 @@ import { WebDriver } from "selenium-webdriver";
 export const backend = {
   nodeVersion: async (msg: string): Promise<string> =>
     await ipcRenderer.invoke("node-version", msg),
-  createChromeProfile: async (profileName: string, profilePath: string): Promise<string> => {
+  createChromeProfile: async (
+    profileName: string,
+    profilePath: string
+  ): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
-    return await ipcRenderer.invoke("create-chrome-profile", { profileName, profilePath });
+    return await ipcRenderer.invoke("create-chrome-profile", {
+      profileName,
+      profilePath,
+    });
   },
-  openChromeWithProfile: async (id:string,profilePath: string,proxyPath?:string,linkOpenChrome?:string,totalProfile?:number): Promise<string> => {
+  openChromeWithProfile: async (
+    id: string,
+    profilePath: string,
+    proxyPath?: string,
+    linkOpenChrome?: string,
+    totalProfile?: number
+  ): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
-    return await ipcRenderer.invoke("open-chrome-profile", {id:id,  profilePath,proxyPath ,linkOpenChrome ,totalProfile});
-  },
- 
-  closeChrome: async (id:string): Promise<boolean> => {
-   return await ipcRenderer.invoke("close-chrome-profile",id)
+    return await ipcRenderer.invoke("open-chrome-profile", {
+      id: id,
+      profilePath,
+      proxyPath,
+      linkOpenChrome,
+      totalProfile,
+    });
   },
 
-  deleteChromeProfile:async(pathProfile:string):Promise<boolean>=>
-    await ipcRenderer.invoke("delete-chrome-profile",pathProfile),
+  closeChrome: async (id: string): Promise<boolean> => {
+    return await ipcRenderer.invoke("close-chrome-profile", id);
+  },
 
-  seedingLiveStream :async(chromeProfileIds:string[],comments:string , delay:number,linkLiveStream:string):Promise<void>=>
-  
+  loadAudio: async (path: string): Promise<string> => {
+    return await ipcRenderer.invoke("load-audio", path);
+  },
+
+  deleteChromeProfile: async (pathProfile: string): Promise<boolean> =>
+    await ipcRenderer.invoke("delete-chrome-profile", pathProfile),
+
+  seedingLiveStream: async (
+    chromeProfileIds: string[],
+    comments: string,
+    delay: number,
+    linkLiveStream: string
+  ): Promise<void> =>
     await ipcRenderer.invoke("seeding-livestream", {
       chromeProfileIds,
       comments,
       delay,
       linkLiveStream,
-    })
+    }),
 };
 
 contextBridge.exposeInMainWorld("backend", backend);
