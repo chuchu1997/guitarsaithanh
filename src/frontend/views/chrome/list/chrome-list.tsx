@@ -8,6 +8,7 @@ import useChromeStore from "@/hooks/use-chromes";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Chrome, X } from "lucide-react";
+import LogStatusComponent from "@/components/log-status";
 const ChromeListView = () => {
   const [loading, setLoading] = useState(false);
   const chromeStore = useChromeStore();
@@ -24,10 +25,16 @@ const ChromeListView = () => {
   function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-  const handleOpenMultipleChromeProfile = async () => {
+  const handleOpenMultipleChromeProfile = async (isHeadless: boolean) => {
     setLoading(true);
     for (const select of selected) {
-      await chromeStore.openChromeProfile(select.id, selected.length);
+      console.log("SELECTE", select);
+      console.log("is head", isHeadless);
+      await chromeStore.openChromeProfile(
+        select.id,
+        selected.length,
+        isHeadless
+      );
       await delay(200); // ⏱️ Delay 500ms sau mỗi lần mở
     }
     setLoading(false);
@@ -47,9 +54,17 @@ const ChromeListView = () => {
             variant="default"
             className="gap-1"
             disabled={loading}
-            onClick={handleOpenMultipleChromeProfile}>
+            onClick={() => handleOpenMultipleChromeProfile(false)}>
             <Chrome className="w-4 h-4" />
             Mở Chrome Profile
+          </Button>
+          <Button
+            variant="default"
+            className="gap-1"
+            disabled={loading}
+            onClick={() => handleOpenMultipleChromeProfile(true)}>
+            <Chrome className="w-4 h-4" />
+            Mở Chrome Profile (KHÔNG GIAO DIỆN)
           </Button>
           <Button
             disabled={loading}
@@ -69,6 +84,7 @@ const ChromeListView = () => {
         searchKey="name"
         columns={columns}
         data={formatColumn}></DataTable>
+      <LogStatusComponent />
     </>
   );
 };

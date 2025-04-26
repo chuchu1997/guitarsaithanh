@@ -22,6 +22,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns, LiveStreamColumn } from "./column";
 import toast from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import LogStatusComponent from "@/components/log-status";
 interface LiveStreamPageProps {
   id: string;
 }
@@ -47,7 +48,10 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
     defaultValues: {
       comments: liveTarget.comments,
       delay: liveTarget.delay,
-      link: liveTarget.linkLive,
+      link:
+        liveTarget.linkLive == ""
+          ? "https://www.tiktok.com/@guitarsaithanh/live"
+          : liveTarget.linkLive,
       acceptDupplicateComment: liveTarget.acceptDupplicateComment ?? false,
     },
   });
@@ -262,6 +266,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
           </div>
         </form>
       </Form>
+      <LogStatusComponent />
     </div>
   );
 };

@@ -1,7 +1,7 @@
 /** @format */
 
 // main.ts
-import { ipcMain, IpcMainInvokeEvent, app } from "electron";
+import { ipcMain, IpcMainInvokeEvent, app, BrowserWindow } from "electron";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -49,13 +49,17 @@ async function openChromeProfile({
   proxyPath,
   linkOpenChrome,
   totalProfile,
+  headless,
 }: {
   id: string;
   profilePath: string;
   proxyPath?: string;
   linkOpenChrome?: string;
   totalProfile?: number;
+  headless?: boolean;
 }): Promise<{ driverId: string } | null> {
+  const profileName = path.basename(profilePath); // "cuong guitar"
+
   try {
     const screenWidth = 1920;
     const screenHeight = 1080;
@@ -86,19 +90,25 @@ async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
-      `--window-size=${1280},${800}`,
 
       // `--window-size=${width},${height}`,
       `--window-position=${x},${y}`,
     ];
+    if (!headless) {
+      args.push(`--window-size=${width},${height}`);
+    } else {
+      args.push("--window-size=1280,800");
+    }
 
     if (proxyPath) {
       const [ip, port] = proxyPath.split(":");
       args.push(`--proxy-server=http://${ip}:${port}`);
     }
 
+    sendLogToRenderer(`🖥️ Headless: ${headless ? "Có" : "Không"}`);
+
     const browser = await puppeteer.launch({
-      headless: false,
+      headless: headless,
       executablePath: CHROME_PATH,
       args,
       defaultViewport: {
@@ -116,6 +126,9 @@ async function openChromeProfile({
     if (proxyPath) {
       const [, , username, password] = proxyPath.split(":");
       await page.authenticate({ username, password });
+      sendLogToRenderer(`✅ Có sử dụng proxy và đã xác thực`); // Gửi log nếu có sử dụng proxy
+    } else {
+      sendLogToRenderer(`❌ Không có proxy được sử dụng.`);
     }
 
     await page.goto("https://tiktok.com", {
@@ -123,10 +136,43 @@ async function openChromeProfile({
       timeout: 30000, // nếu quá 30s thì bỏ qua
     });
 
+    const avatar = await page.$("div.TUXButton-iconContainer img");
+
+    // Nếu có avatar → Đã đăng nhập
+    const isLoggedIn = avatar !== null;
+
+    if (isLoggedIn) {
+      sendLogToRenderer(
+        `✅ Trạng thái đăng nhập: (Đã đăng nhập) : ${profileName}`
+      );
+    } else {
+      sendLogToRenderer(
+        `❌ Trạng thái đăng nhập: (Chưa đăng nhập) : ${profileName}`
+      );
+
+      try {
+        await page.waitForSelector("#header-login-button", { timeout: 5000 });
+        await page.evaluate(() => {
+          const loginButton = document.querySelector("#header-login-button");
+          if (loginButton) (loginButton as HTMLElement).click();
+        });
+      } catch (error) {
+        sendLogToRenderer(`⚠️ Lỗi khi cố gắng đăng nhập: ${error}`);
+      }
+    }
     browsers[id] = { browser, page, profilePath };
+
+    sendLogToRenderer(`✅ Đã mở profile : ${profileName}`);
+
+    sendLogToRenderer(`--------------------------------`);
+
     return { driverId: id };
   } catch (err) {
-    console.error(`❌ Lỗi mở profile ${id}:`, (err as Error).message);
+    sendLogToRenderer(
+      `❌ Lỗi mở profile ${profileName} với ID: ${id} : ${
+        (err as Error).message
+      }`
+    );
     return null;
   }
 }
@@ -137,53 +183,46 @@ async function enterTextIntoContentEditable(
   text: string
 ) {
   // Đảm bảo rằng phần tử đã sẵn sàng để tương tác
-  await page.waitForSelector(selector, { visible: true });
+  try {
+    await page.waitForSelector(selector, { visible: true });
+    sendLogToRenderer(`🔍 Tìm selector đầu tiên: ${selector}`);
 
-  // Xóa văn bản cũ trong contenteditable
-  console.log("TIM THAY 1");
-  await page.evaluate((sel) => {
-    const el = document.querySelector(sel);
-    if (el) el.innerHTML = ""; // Clear existing text
-  }, selector);
+    await page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      if (el) el.innerHTML = "";
+    }, selector);
 
-  // Chọn phần tử cần tương tác
-  const el = await page.$(selector);
+    const el = await page.$(selector);
+    sendLogToRenderer(`🔍 Tìm input comment: ${el}`);
 
-  console.log("TIM THAY 2 PHAN TU TUONG TAC");
+    if (!el) throw new Error("❌ Không tìm thấy input comment");
 
-  if (!el) throw new Error("Không tìm thấy input");
+    await el.click();
+    sendLogToRenderer(`🖱️ Đã click vào input comment`);
 
-  // Click vào phần tử trước khi gõ
-  await el.click();
+    await el.type(text, { delay: 30 });
+    sendLogToRenderer(`⌨️ Đã nhập comment: "${text}"`);
 
-  console.log("TIM THAY 3 PHAN TU TUONG TAC CLICK COMMENT");
+    const postSvgSelector = 'svg path[d^="M45.7321 7.00001"]';
+    await page.waitForSelector(postSvgSelector, { visible: true });
+    sendLogToRenderer(`🔍 Tìm nút gửi comment`);
 
-  // await new Promise((resolve) => setTimeout(resolve, 1000)); // Đợi một chút cho chắc chắn
-  await el.type(text, { delay: 30 }); // delay nhẹ giữa mỗi ký tự cho giống người dùng thật
-  console.log("TIM THAY 4 NHAP COMMENT");
+    const postBtn = await page.$(postSvgSelector);
+    if (!postBtn) throw new Error("❌ Không tìm thấy nút gửi comment");
 
-  // Gõ văn bản vào phần tử contenteditable
-  // await el.type(text);
-  // await new Promise((resolve) => setTimeout(resolve, 1000)); // Thêm thời gian chờ sau khi gõ
+    const clickableDiv = await postBtn.evaluateHandle((el) => {
+      return el.closest("div[tabindex='0']");
+    });
 
-  // Đợi nút gửi comment xuất hiện
+    if (!clickableDiv) throw new Error("❌ Không tìm thấy nút gửi comment");
 
-  const postSvgSelector = 'svg path[d^="M45.7321 7.00001"]';
-  await page.waitForSelector(postSvgSelector, { visible: true });
-
-  const postBtn = await page.$(postSvgSelector);
-  if (!postBtn) throw new Error("Không tìm thấy icon gửi comment");
-
-  const clickableDiv = await postBtn.evaluateHandle((el) => {
-    // Đi lên thẻ cha có thể click được
-    return el.closest("div[tabindex='0']");
-  });
-
-  if (!clickableDiv)
-    throw new Error("Không tìm thấy div có thể click gửi comment");
-
-  await (clickableDiv as ElementHandle<Element>).click();
-  console.log("✅ Comment đã gửi!");
+    await (clickableDiv as ElementHandle<Element>).click();
+    sendLogToRenderer(`✅ Comment đã được gửi thành công!`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    sendLogToRenderer(`❌ Lỗi khi gửi comment: ${message}`);
+    throw error; // Nếu cần dừng tiến trình, bạn có thể throw lại
+  }
 }
 ipcMain.handle("open-chrome-profile", async (_e, params) => {
   const { driverId } = await openChromeProfile(params);
@@ -220,9 +259,27 @@ ipcMain.handle(
         ? commentList[Math.floor(Math.random() * commentList.length)]
         : "Hello livestream 👋";
     const availableComments = new Set<string>(); // Sử dụng Set để kiểm tra comment đã gửi
+    sendLogToRenderer(
+      `🧮 Tổng cộng số lượng profile sẽ chạy seeding: ${shuffled.length} profile`
+    );
+
+    sendLogToRenderer(
+      `🎯 Chế độ comment: ${
+        acceptDupplicateComment
+          ? "✅ Cho phép trùng"
+          : "🚫 Không cho phép trùng"
+      }`
+    );
     for (const profileId of shuffled) {
+      // const profileName = path.basename(profilePath); // Lấy tên cuối cùng (ví dụ: "cuong guitar")
+
       const instance = browsers[profileId];
+
       if (!instance) continue;
+      const profileName = path.basename(instance.profilePath);
+      sendLogToRenderer(`👤 Bắt đầu chạy profile: ${profileName}`);
+
+      // sendLogToRenderer(`Tổng cộng số lượng profile chạy luông seeding này ${shuffleArray.length} `);
 
       const { page } = instance;
 
@@ -235,7 +292,7 @@ ipcMain.handle(
       }
 
       if (availableComments.has(comment) && !acceptDupplicateComment) {
-        console.log("Comment trùng lặp, bỏ qua!");
+        sendLogToRenderer(`⚠️ Phát hiện comment trùng, bỏ qua!`);
         continue; // Bỏ qua nếu comment đã gửi và không cho phép trùng lặp
       }
 
@@ -249,7 +306,9 @@ ipcMain.handle(
 
       // console.log(`⏳ Đợi ${delay}ms...`);
       // await new Promise((resolve) => setTimeout(resolve, delay)); // dùng delay từ props
+      sendLogToRenderer(`----------------------------------`);
     }
+    sendLogToRenderer(`----------------------------------`);
   }
 );
 
@@ -258,15 +317,19 @@ ipcMain.handle("close-chrome-profile", async (_e, id: string) => {
   if (!instance) return false;
   await instance.browser.close();
   delete browsers[id];
+
   return false;
 });
 
 ipcMain.handle("delete-chrome-profile", (_e, profilePath: string) => {
-  console.log("PROFILE", profilePath);
+  const profileName = path.basename(profilePath);
   if (fs.existsSync(profilePath)) {
     fs.rmSync(profilePath, { recursive: true, force: true });
     return true;
   }
+  sendLogToRenderer(`Đã xóa profile : ${profileName} `);
+  sendLogToRenderer(`----------------------------------`);
+
   return false;
 });
 
@@ -275,6 +338,8 @@ ipcMain.handle("load-audio", async (_event, filePath: string) => {
   const base64Audio = audioBuffer.toString("base64");
   const ext = path.extname(filePath).substring(1); // "mp3"
   const dataUrl = `data:audio/${ext};base64,${base64Audio}`;
+  sendLogToRenderer(`Đã load audio ở đường dẫn ${filePath}`);
+  sendLogToRenderer(`----------------------------------`);
   return dataUrl;
 });
 
@@ -301,11 +366,20 @@ ipcMain.handle(
     });
 
     await browser.close();
+    sendLogToRenderer(`Đã tạo mới profile tại đường dẫn ${fullProfilePath}`);
 
+    sendLogToRenderer(`----------------------------------`);
     return fullProfilePath;
   }
 );
 
+//CREATE LOG
+function sendLogToRenderer(log: string) {
+  const win = BrowserWindow.getAllWindows()[0]; // hoặc lưu biến win chính
+  if (win) {
+    win.webContents.send("update-log", log);
+  }
+}
 app.on("before-quit", async (e) => {
   e.preventDefault();
   for (const id in browsers) {

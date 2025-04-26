@@ -40,7 +40,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     }
   };
   const onOpenChrome = async () => {
-    await chromeStore.openChromeProfile(data.id);
+    await chromeStore.openChromeProfile(data.id, 1, false);
   };
   const onCloseChrome = async () => {
     await chromeStore.closeChromeProfile(data.id);

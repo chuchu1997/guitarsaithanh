@@ -21,7 +21,8 @@ export const backend = {
     profilePath: string,
     proxyPath?: string,
     linkOpenChrome?: string,
-    totalProfile?: number
+    totalProfile?: number,
+    headless?:boolean
   ): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
     return await ipcRenderer.invoke("open-chrome-profile", {
@@ -30,6 +31,7 @@ export const backend = {
       proxyPath,
       linkOpenChrome,
       totalProfile,
+      headless
     });
   },
 
@@ -58,6 +60,13 @@ export const backend = {
       linkLiveStream,
       acceptDupplicateComment
     }),
+
+
+    onLogUpdate: (callback: (log: string) => void): void => {
+      ipcRenderer.on("update-log", (_event, log) => {
+        callback(log);
+      });
+    },
 };
 
 contextBridge.exposeInMainWorld("backend", backend);

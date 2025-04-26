@@ -20,7 +20,11 @@ export interface ChromeStore {
   updateItem: (data: ChromeProfile) => void;
   removeItem: (id: string) => void;
   getChromeProfileWithID: (id: string) => ChromeProfile;
-  openChromeProfile: (id: string, totalProfile?: number) => void;
+  openChromeProfile: (
+    id: string,
+    totalProfile?: number,
+    headless?: boolean
+  ) => void;
   closeChromeProfile: (id: string) => void;
   resetStateChromeProfile: () => void;
 }
@@ -62,17 +66,22 @@ const useChromeStore = create(
         }
       },
 
-      openChromeProfile: async (id: string, totalProfile?: number) => {
+      openChromeProfile: async (
+        id: string,
+        totalProfile?: number,
+        headless?: boolean
+      ) => {
         const store = get();
         const targetProfile = store.items.find((item) => item.id === id);
-
+        console.log("HEAD", headless);
         if (targetProfile && !targetProfile.isOpen) {
           await backend.openChromeWithProfile(
             targetProfile.id,
             targetProfile.pathProfile,
             targetProfile.proxy,
             "",
-            totalProfile
+            totalProfile,
+            headless
           );
 
           const updatedProfile = { ...targetProfile, isOpen: true }; // 👈 clone và thay đổi
