@@ -5,7 +5,7 @@ import { ipcMain, IpcMainInvokeEvent, app, BrowserWindow } from "electron";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { Buffer } from "buffer";
+
 import puppeteer, {
   Browser,
   ElementHandle,
@@ -13,7 +13,6 @@ import puppeteer, {
   launch,
 } from "puppeteer-core";
 // eslint-disable-next-line import/default
-import chromeLauncher from "chrome-launcher";
 const CHROME_PATH =
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 
@@ -90,7 +89,6 @@ async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
-
       // `--window-size=${width},${height}`,
       `--window-position=${x},${y}`,
     ];
@@ -249,15 +247,6 @@ ipcMain.handle(
   ) => {
     const shuffled = shuffleArray(chromeProfileIds);
 
-    const commentList = comments
-      .split(/[,\n]/)
-      .map((c) => c.trim())
-      .filter(Boolean);
-
-    const comment =
-      commentList.length > 0
-        ? commentList[Math.floor(Math.random() * commentList.length)]
-        : "Hello livestream 👋";
     const availableComments = new Set<string>(); // Sử dụng Set để kiểm tra comment đã gửi
     sendLogToRenderer(
       `🧮 Tổng cộng số lượng profile sẽ chạy seeding: ${shuffled.length} profile`
@@ -271,6 +260,16 @@ ipcMain.handle(
       }`
     );
     for (const profileId of shuffled) {
+      
+    const commentList = comments
+    .split(/[,\n]/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  const comment =
+    commentList.length > 0
+      ? commentList[Math.floor(Math.random() * commentList.length)]
+      : "Hello livestream 👋";
       // const profileName = path.basename(profilePath); // Lấy tên cuối cùng (ví dụ: "cuong guitar")
 
       const instance = browsers[profileId];
@@ -284,7 +283,13 @@ ipcMain.handle(
       const { page } = instance;
 
       const url = page.url();
+      sendLogToRenderer(`👤 URL: ${url}`);
+      sendLogToRenderer(`👤 LINK LIVE: ${linkLiveStream}`);
+
+
       if (url !== linkLiveStream) {
+        sendLogToRenderer(`👤 CO NHAY VAO : ${linkLiveStream}`);
+
         await page.goto(linkLiveStream, {
           waitUntil: "networkidle2",
           timeout: 0,
@@ -298,7 +303,7 @@ ipcMain.handle(
 
       await enterTextIntoContentEditable(
         page,
-        "div[contenteditable='plaintext-only'][placeholder='Say something nice']",
+        "div[contenteditable='plaintext-only']",
         comment
       );
 
@@ -343,6 +348,31 @@ ipcMain.handle("load-audio", async (_event, filePath: string) => {
   return dataUrl;
 });
 
+function findChromePath(): string | undefined {
+  const platform = os.platform();
+
+  if (platform === 'win32') {
+    const chromePaths = [
+      path.join(process.env['PROGRAMFILES'] || '', 'Google/Chrome/Application/chrome.exe'),
+      path.join(process.env['PROGRAMFILES(X86)'] || '', 'Google/Chrome/Application/chrome.exe'),
+      path.join(process.env['LOCALAPPDATA'] || '', 'Google/Chrome/Application/chrome.exe'),
+    ];
+    return chromePaths.find(fs.existsSync);
+  } else if (platform === 'darwin') {
+    const chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    return fs.existsSync(chromePath) ? chromePath : undefined;
+  } else if (platform === 'linux') {
+    const chromePaths = [
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/snap/bin/chromium',
+    ];
+    return chromePaths.find(fs.existsSync);
+  }
+  return undefined;
+}
+
+
 ipcMain.handle(
   "create-chrome-profile",
   async (_e, { profileName, profilePath }) => {
@@ -350,9 +380,17 @@ ipcMain.handle(
     if (!fs.existsSync(fullProfilePath)) {
       fs.mkdirSync(fullProfilePath, { recursive: true });
     }
-    const chromePath = chromeLauncher.Launcher.getInstallations().find((p) =>
-      p.toLowerCase().includes("chrome")
-    );
+
+    let chromePath = findChromePath();
+    if (!chromePath) {
+      chromePath = puppeteer.executablePath();
+    }
+  
+    if (!chromePath) {
+      throw new Error('Không thể tìm thấy Chrome hoặc Chromium trên máy.');
+    }
+  
+
     const browser: Browser = await launch({
       headless: false,
       executablePath: chromePath,

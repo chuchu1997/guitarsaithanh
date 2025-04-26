@@ -1,17 +1,25 @@
 import { defineConfig } from "vite";
 import commonjsExternals from "vite-plugin-commonjs-externals";
+
 export default defineConfig({
   plugins: [
-    // Sử dụng commonjsExternals để tránh bundling selenium-webdriver và chromedriver
+    // Tránh bundling các thư viện CommonJS lớn
     commonjsExternals({
       externals: [
-        "selenium-webdriver",
-        "chromedriver",
-        "selenium-webdriver/chrome",
-        "chrome-launcher",
+        // "selenium-webdriver",
+        // "chromedriver",
+        // "selenium-webdriver/chrome",
+        // "chrome-launcher",
       ],
     }),
-
-    // Cấu hình plugin commonjs để xử lý dynamic imports
+   
+    // Nếu sau này cần thêm plugin xử lý dynamic import, bạn có thể thêm ở đây
   ],
+
+  build: {
+    
+      chunkSizeWarningLimit: 2000, // tăng từ 500kB lên 2000kB, không cảnh báo nữa
+    
+  },
+
 });
