@@ -48,13 +48,15 @@ export const backend = {
     chromeProfileIds: string[],
     comments: string,
     delay: number,
-    linkLiveStream: string
+    linkLiveStream: string,
+    acceptDupplicateComment:boolean
   ): Promise<void> =>
     await ipcRenderer.invoke("seeding-livestream", {
       chromeProfileIds,
       comments,
       delay,
       linkLiveStream,
+      acceptDupplicateComment
     }),
 };
 

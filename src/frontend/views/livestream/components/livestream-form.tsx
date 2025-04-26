@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, LiveStreamColumn } from "./column";
 import toast from "react-hot-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 interface LiveStreamPageProps {
   id: string;
 }
@@ -29,6 +30,7 @@ const formSchema = z.object({
   comments: z.string().min(1, { message: "Không được để trống nội dung." }),
   delay: z.coerce.number().min(1, { message: "Delay tối thiểu là 1 giây" }),
   link: z.string().url({ message: "Link không hợp lệ" }),
+  acceptDupplicateComment: z.boolean().optional(),
 });
 const LivestreamSeedingView = (props: LiveStreamPageProps) => {
   const { id } = props;
@@ -46,6 +48,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       comments: liveTarget.comments,
       delay: liveTarget.delay,
       link: liveTarget.linkLive,
+      acceptDupplicateComment: liveTarget.acceptDupplicateComment ?? false,
     },
   });
 
@@ -133,6 +136,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
         name: liveTarget.name,
         comments: data.comments,
         delay: data.delay,
+        acceptDupplicateComment: data.acceptDupplicateComment,
       });
       // Gửi danh sách chrome profile để seeding livestream
       const profileIds = selected.map((select) => select.id);
@@ -140,7 +144,8 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
         profileIds,
         data.comments,
         data.delay,
-        data.link
+        data.link,
+        data.acceptDupplicateComment
       );
       toast.success("✅Đã seeding livestream");
     } catch (error) {
@@ -195,6 +200,21 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
                 <p className="text-sm text-gray-500">
                   Mỗi dòng sẽ được chọn ngẫu nhiên để bình luận.
                 </p>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="acceptDupplicateComment"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cho phép bình luận trùng lặp</FormLabel>
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
               </FormItem>
             )}
           />

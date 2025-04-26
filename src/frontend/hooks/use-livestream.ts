@@ -12,6 +12,7 @@ export interface LiveStreamInfo {
   name: string;
   comments: string;
   delay: number;
+  acceptDupplicateComment: boolean;
 }
 
 export interface LiveStreamStore {

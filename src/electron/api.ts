@@ -1,3 +1,5 @@
+/** @format */
+
 // main.ts
 import { ipcMain, IpcMainInvokeEvent, app } from "electron";
 import fs from "fs";
@@ -10,6 +12,7 @@ import puppeteer, {
   Page,
   launch,
 } from "puppeteer-core";
+// eslint-disable-next-line import/default
 import chromeLauncher from "chrome-launcher";
 const CHROME_PATH =
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
@@ -70,7 +73,7 @@ async function openChromeProfile({
     const y = row * height;
 
     const userAgentPath = path.join(profilePath, "ua.txt");
-    let userAgent = fs.existsSync(userAgentPath)
+    const userAgent = fs.existsSync(userAgentPath)
       ? fs.readFileSync(userAgentPath, "utf-8").trim()
       : getRandomUserAgent();
 
@@ -83,10 +86,12 @@ async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
+      `--window-size=${1280},${800}`,
+
+      // `--window-size=${width},${height}`,
+      `--window-position=${x},${y}`,
     ];
 
-    // `--window-size=${width},${height}`,
-    // `--window-position=${x},${y}`,
     if (proxyPath) {
       const [ip, port] = proxyPath.split(":");
       args.push(`--proxy-server=http://${ip}:${port}`);
@@ -96,7 +101,11 @@ async function openChromeProfile({
       headless: false,
       executablePath: CHROME_PATH,
       args,
-      defaultViewport: null,
+      defaultViewport: {
+        width: 1280,
+        height: 800,
+        deviceScaleFactor: 1,
+      },
     });
 
     const pages = await browser.pages();
@@ -128,9 +137,10 @@ async function enterTextIntoContentEditable(
   text: string
 ) {
   // Đảm bảo rằng phần tử đã sẵn sàng để tương tác
-  await page.waitForSelector(selector, { visible: true, timeout: 0 });
+  await page.waitForSelector(selector, { visible: true });
 
   // Xóa văn bản cũ trong contenteditable
+  console.log("TIM THAY 1");
   await page.evaluate((sel) => {
     const el = document.querySelector(sel);
     if (el) el.innerHTML = ""; // Clear existing text
@@ -139,19 +149,27 @@ async function enterTextIntoContentEditable(
   // Chọn phần tử cần tương tác
   const el = await page.$(selector);
 
+  console.log("TIM THAY 2 PHAN TU TUONG TAC");
+
   if (!el) throw new Error("Không tìm thấy input");
 
   // Click vào phần tử trước khi gõ
   await el.click();
-  await new Promise((resolve) => setTimeout(resolve, 1000)); // Đợi một chút cho chắc chắn
+
+  console.log("TIM THAY 3 PHAN TU TUONG TAC CLICK COMMENT");
+
+  // await new Promise((resolve) => setTimeout(resolve, 1000)); // Đợi một chút cho chắc chắn
+  await el.type(text, { delay: 30 }); // delay nhẹ giữa mỗi ký tự cho giống người dùng thật
+  console.log("TIM THAY 4 NHAP COMMENT");
 
   // Gõ văn bản vào phần tử contenteditable
-  await el.type(text);
-  await new Promise((resolve) => setTimeout(resolve, 1000)); // Thêm thời gian chờ sau khi gõ
+  // await el.type(text);
+  // await new Promise((resolve) => setTimeout(resolve, 1000)); // Thêm thời gian chờ sau khi gõ
 
   // Đợi nút gửi comment xuất hiện
+
   const postSvgSelector = 'svg path[d^="M45.7321 7.00001"]';
-  await page.waitForSelector(postSvgSelector, { timeout: 0 });
+  await page.waitForSelector(postSvgSelector, { visible: true });
 
   const postBtn = await page.$(postSvgSelector);
   if (!postBtn) throw new Error("Không tìm thấy icon gửi comment");
@@ -181,43 +199,45 @@ ipcMain.handle(
       comments,
       delay,
       linkLiveStream,
+      acceptDupplicateComment,
     }: {
       chromeProfileIds: string[];
       comments: string;
       delay: number;
       linkLiveStream: string;
+      acceptDupplicateComment: boolean;
     }
   ) => {
     const shuffled = shuffleArray(chromeProfileIds);
 
+    const commentList = comments
+      .split(/[,\n]/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    const comment =
+      commentList.length > 0
+        ? commentList[Math.floor(Math.random() * commentList.length)]
+        : "Hello livestream 👋";
+    const availableComments = new Set<string>(); // Sử dụng Set để kiểm tra comment đã gửi
     for (const profileId of shuffled) {
       const instance = browsers[profileId];
-
-      console.log("P-P", instance.profilePath);
       if (!instance) continue;
 
       const { page } = instance;
 
-      // browsers[id] = { browser, page, profilePath };
-      console.log("PAGE", page);
+      const url = page.url();
+      if (url !== linkLiveStream) {
+        await page.goto(linkLiveStream, {
+          waitUntil: "networkidle2",
+          timeout: 0,
+        });
+      }
 
-      // const url = page.url();
-      // if (url !== linkLiveStream) {
-
-      // }
-      await page.goto(linkLiveStream, {
-        waitUntil: "networkidle2",
-        timeout: 0,
-      });
-      const commentList = comments
-        .split(/[,\n]/)
-        .map((c) => c.trim())
-        .filter(Boolean);
-
-      const comment =
-        commentList.length > 0
-          ? commentList[Math.floor(Math.random() * commentList.length)]
-          : "Hello livestream 👋";
+      if (availableComments.has(comment) && !acceptDupplicateComment) {
+        console.log("Comment trùng lặp, bỏ qua!");
+        continue; // Bỏ qua nếu comment đã gửi và không cho phép trùng lặp
+      }
 
       await enterTextIntoContentEditable(
         page,
@@ -225,8 +245,10 @@ ipcMain.handle(
         comment
       );
 
-      console.log(`⏳ Đợi ${delay}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, delay)); // dùng delay từ props
+      availableComments.add(comment); // Lưu comment vào Set
+
+      // console.log(`⏳ Đợi ${delay}ms...`);
+      // await new Promise((resolve) => setTimeout(resolve, delay)); // dùng delay từ props
     }
   }
 );
@@ -274,9 +296,10 @@ ipcMain.handle(
     });
 
     const page = await browser.newPage();
-    await page.goto("https://example.com");
+    await page.goto("https://example.com", {
+      waitUntil: "networkidle2", // chờ đến khi không còn request mạng nào trong 500ms
+    });
 
-    await new Promise((r) => setTimeout(r, 3000)); // Đợi Chrome ghi dữ liệu profile
     await browser.close();
 
     return fullProfilePath;
