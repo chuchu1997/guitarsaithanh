@@ -105,9 +105,23 @@ async function openChromeProfile({
 
     sendLogToRenderer(`🖥️ Headless: ${headless ? "Có" : "Không"}`);
 
-    const browser = await puppeteer.launch({
+
+    let chromePath = findChromePath();
+    if (!chromePath) {
+      chromePath = puppeteer.executablePath();
+    }
+  
+    // const browser: Browser = await launch({
+    //   headless: false,
+    //   executablePath: chromePath,
+    //   userDataDir: fullProfilePath,
+    //   args: ["--no-first-run", "--no-default-browser-check"],
+    // });
+
+
+    const browser = await launch({
       headless: headless,
-      executablePath: CHROME_PATH,
+      executablePath: chromePath,
       args,
       defaultViewport: {
         width: 1280,

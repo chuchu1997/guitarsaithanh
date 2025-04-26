@@ -11,6 +11,19 @@
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
+  "build": {
+  "appId": "com.example.app",
+  "productName": "My App",
+  "mac": {
+    "icon": "path/to/icon.icns"
+  },
+  "win": {
+    "icon": "path/to/icon.ico"
+  },
+  "linux": {
+    "icon": "path/to/icon.png"
+  }
+},
   "keywords": [],
   "author": {
     "name": "cuong",
