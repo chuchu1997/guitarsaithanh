@@ -1,6 +1,6 @@
 {
-  "name": "seeding-tool",
-  "productName": "seeding-tool",
+  "name": "guitar-saithanh-tool",
+  "productName": "guitar-saithanh-tool",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
@@ -12,18 +12,18 @@
     "lint": "eslint --ext .ts,.tsx ."
   },
   "build": {
-  "appId": "com.example.app",
-  "productName": "My App",
-  "mac": {
-    "icon": "path/to/icon.icns"
+    "appId": "com.example.app",
+    "productName": "My App",
+    "mac": {
+      "icon": "path/to/icon.icns"
+    },
+    "win": {
+      "icon": "path/to/icon.ico"
+    },
+    "linux": {
+      "icon": "path/to/icon.png"
+    }
   },
-  "win": {
-    "icon": "path/to/icon.ico"
-  },
-  "linux": {
-    "icon": "path/to/icon.png"
-  }
-},
   "keywords": [],
   "author": {
     "name": "cuong",
