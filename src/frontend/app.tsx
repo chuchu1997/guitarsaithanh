@@ -30,9 +30,27 @@ const App = () => {
   const liveStreamStore = useLiveStreamStore();
 
   useEffect(() => {
+    backend.onListenCloseChromeByUser((driverIdClose: string) => {
+      chromeStore.closeChromeProfileManual(driverIdClose);
+    });
+    // backend.onLogUpdate((log: string) => {
+    //   const type: LogItem["type"] = log.toLowerCase().includes("error")
+    //     ? "error"
+    //     : log.toLowerCase().includes("warning")
+    //     ? "warning"
+    //     : "info";
+
+    //   setLogs((prev) => [
+    //     ...prev,
+    //     { id: counter++, message: log, type }
+    //   ]);
+    // });
+  }, []);
+  useEffect(() => {
     chromeStore.resetStateChromeProfile();
     liveStreamStore.reset();
   }, []);
+
   return (
     <HashRouter>
       <div className="flex h-screen w-screen overflow-hidden">

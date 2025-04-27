@@ -26,6 +26,8 @@ export interface ChromeStore {
     headless?: boolean
   ) => void;
   closeChromeProfile: (id: string) => void;
+  closeChromeProfileManual: (id: string) => void;
+
   resetStateChromeProfile: () => void;
 }
 
@@ -73,21 +75,31 @@ const useChromeStore = create(
       ) => {
         const store = get();
         const targetProfile = store.items.find((item) => item.id === id);
-        console.log("HEAD", headless);
-        if (targetProfile && !targetProfile.isOpen) {
-          await backend.openChromeWithProfile(
-            targetProfile.id,
-            targetProfile.pathProfile,
-            targetProfile.proxy,
-            "",
-            totalProfile,
-            headless
-          );
 
-          const updatedProfile = { ...targetProfile, isOpen: true }; // 👈 clone và thay đổi
+        let updatedProfile; // 👈 clone và thay đổi
+
+        try {
+          if (targetProfile && !targetProfile.isOpen) {
+            let result = await backend.openChromeWithProfile(
+              targetProfile.id,
+              targetProfile.pathProfile,
+              targetProfile.proxy,
+              "",
+              totalProfile,
+              headless
+            );
+
+            updatedProfile = {
+              ...targetProfile,
+              isOpen: result != "" ? true : false,
+            };
+            store.updateItem(updatedProfile); // 👈 trigger update
+
+            return updatedProfile;
+          }
+        } catch (err) {
+          updatedProfile = { ...targetProfile, isOpen: false };
           store.updateItem(updatedProfile); // 👈 trigger update
-
-          return updatedProfile;
         }
       },
       closeChromeProfile: async (id: string) => {
@@ -100,8 +112,15 @@ const useChromeStore = create(
         const updatedProfile = { ...targetProfile, isOpen: result }; // ✅ không mutate
 
         store.updateItem(updatedProfile); // ✅ trigger update trong Zustand
+      },
+      closeChromeProfileManual(id) {
+        const store = get();
 
-        console.log("TARGET", updatedProfile);
+        const targetProfile = store.items.find((item) => item.id === id);
+        if (!targetProfile) return;
+
+        const updatedProfile = { ...targetProfile, isOpen: false }; // ✅ không mutate
+        store.updateItem(updatedProfile); // ✅ trigger update trong Zustand
       },
       updateItem: async (data: ChromeProfile) => {
         const updateItems = get().items.map((item) => {

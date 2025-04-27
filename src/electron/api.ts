@@ -56,7 +56,7 @@ async function openChromeProfile({
   linkOpenChrome?: string;
   totalProfile?: number;
   headless?: boolean;
-}): Promise<{ driverId: string } | null> {
+}): Promise<string> {
   const profileName = path.basename(profilePath); // "cuong guitar"
 
   try {
@@ -89,7 +89,6 @@ async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
-      // `--window-size=${width},${height}`,
       `--window-position=${x},${y}`,
     ];
     if (!headless) {
@@ -105,19 +104,10 @@ async function openChromeProfile({
 
     sendLogToRenderer(`🖥️ Headless: ${headless ? "Có" : "Không"}`);
 
-
     let chromePath = findChromePath();
     if (!chromePath) {
       chromePath = puppeteer.executablePath();
     }
-  
-    // const browser: Browser = await launch({
-    //   headless: false,
-    //   executablePath: chromePath,
-    //   userDataDir: fullProfilePath,
-    //   args: ["--no-first-run", "--no-default-browser-check"],
-    // });
-
 
     const browser = await launch({
       headless: headless,
@@ -129,6 +119,18 @@ async function openChromeProfile({
         deviceScaleFactor: 1,
       },
     });
+    browser.on("disconnected", () => {
+      console.log(`🚪 Browser ID ${id} đã bị đóng!`);
+      sendLogToRenderer(`❌ Browser với profile ${profileName} đã đóng.`);
+
+      // Dọn dẹp tài nguyên nếu cần
+      if (browsers[id]) {
+        delete browsers[id];
+      }
+      closeChromeManualToRender(id);
+      return "";
+    });
+    sendLogToRenderer(`❌ Chạy tiếp `);
 
     const pages = await browser.pages();
     const page = pages[0] || (await browser.newPage());
@@ -138,19 +140,18 @@ async function openChromeProfile({
     if (proxyPath) {
       const [, , username, password] = proxyPath.split(":");
       await page.authenticate({ username, password });
-      sendLogToRenderer(`✅ Có sử dụng proxy và đã xác thực`); // Gửi log nếu có sử dụng proxy
+      sendLogToRenderer(`✅ Có sử dụng proxy và đã xác thực`);
     } else {
       sendLogToRenderer(`❌ Không có proxy được sử dụng.`);
     }
 
     await page.goto("https://tiktok.com", {
       waitUntil: "load",
-      timeout: 30000, // nếu quá 30s thì bỏ qua
+      timeout: 30000, // Nếu quá 30s thì bỏ qua
     });
 
     const avatar = await page.$("div.TUXButton-iconContainer img");
 
-    // Nếu có avatar → Đã đăng nhập
     const isLoggedIn = avatar !== null;
 
     if (isLoggedIn) {
@@ -172,20 +173,22 @@ async function openChromeProfile({
         sendLogToRenderer(`⚠️ Lỗi khi cố gắng đăng nhập: ${error}`);
       }
     }
+
     browsers[id] = { browser, page, profilePath };
 
     sendLogToRenderer(`✅ Đã mở profile : ${profileName}`);
-
     sendLogToRenderer(`--------------------------------`);
 
-    return { driverId: id };
+    return id;
   } catch (err) {
+    console.log("call error");
     sendLogToRenderer(
       `❌ Lỗi mở profile ${profileName} với ID: ${id} : ${
         (err as Error).message
       }`
     );
-    return null;
+    // Tránh ném lại lỗi gây dừng chương trình
+    return ""; // Hoặc bạn có thể trả về giá trị mặc định khác
   }
 }
 
@@ -237,8 +240,12 @@ async function enterTextIntoContentEditable(
   }
 }
 ipcMain.handle("open-chrome-profile", async (_e, params) => {
-  const { driverId } = await openChromeProfile(params);
-  return driverId;
+  try {
+    const driverId = await openChromeProfile(params);
+    return driverId;
+  } catch (err) {
+    return "";
+  }
 });
 
 ipcMain.handle(
@@ -260,8 +267,8 @@ ipcMain.handle(
     }
   ) => {
     const shuffled = shuffleArray(chromeProfileIds);
+    const availableComments = new Set<string>();
 
-    const availableComments = new Set<string>(); // Sử dụng Set để kiểm tra comment đã gửi
     sendLogToRenderer(
       `🧮 Tổng cộng số lượng profile sẽ chạy seeding: ${shuffled.length} profile`
     );
@@ -273,60 +280,68 @@ ipcMain.handle(
           : "🚫 Không cho phép trùng"
       }`
     );
+
     for (const profileId of shuffled) {
-      
-    const commentList = comments
-    .split(/[,\n]/)
-    .map((c) => c.trim())
-    .filter(Boolean);
+      try {
+        const commentList = comments
+          .split(/[,\n]/)
+          .map((c) => c.trim())
+          .filter(Boolean);
 
-  const comment =
-    commentList.length > 0
-      ? commentList[Math.floor(Math.random() * commentList.length)]
-      : "Hello livestream 👋";
-      // const profileName = path.basename(profilePath); // Lấy tên cuối cùng (ví dụ: "cuong guitar")
+        const comment =
+          commentList.length > 0
+            ? commentList[Math.floor(Math.random() * commentList.length)]
+            : "Hello livestream 👋";
 
-      const instance = browsers[profileId];
+        const instance = browsers[profileId];
 
-      if (!instance) continue;
-      const profileName = path.basename(instance.profilePath);
-      sendLogToRenderer(`👤 Bắt đầu chạy profile: ${profileName}`);
+        if (!instance) continue;
 
-      // sendLogToRenderer(`Tổng cộng số lượng profile chạy luông seeding này ${shuffleArray.length} `);
+        const profileName = path.basename(instance.profilePath);
+        sendLogToRenderer(`👤 Bắt đầu chạy profile: ${profileName}`);
 
-      const { page } = instance;
+        const { page } = instance;
 
-      const url = page.url();
-      sendLogToRenderer(`👤 URL: ${url}`);
-      sendLogToRenderer(`👤 LINK LIVE: ${linkLiveStream}`);
+        const url = page.url();
+        sendLogToRenderer(`👤 URL: ${url}`);
+        sendLogToRenderer(`👤 LINK LIVE: ${linkLiveStream}`);
 
+        if (url !== linkLiveStream) {
+          sendLogToRenderer(`👤 CO NHAY VAO : ${linkLiveStream}`);
+          await page.goto(linkLiveStream, {
+            waitUntil: "networkidle2",
+            timeout: 0,
+          });
+        }
 
-      if (url !== linkLiveStream) {
-        sendLogToRenderer(`👤 CO NHAY VAO : ${linkLiveStream}`);
+        if (availableComments.has(comment) && !acceptDupplicateComment) {
+          sendLogToRenderer(`⚠️ Phát hiện comment trùng, bỏ qua!`);
+          continue;
+        }
 
-        await page.goto(linkLiveStream, {
-          waitUntil: "networkidle2",
-          timeout: 0,
-        });
+        await enterTextIntoContentEditable(
+          page,
+          "div[contenteditable='plaintext-only']",
+          comment
+        );
+
+        availableComments.add(comment);
+
+        sendLogToRenderer(`----------------------------------`);
+      } catch (err) {
+        console.error("Lỗi xử lý profile:", err);
+
+        sendLogToRenderer(
+          `❌ Lỗi trong khi xử lý profile ${profileId}: ${
+            (err as Error).message
+          }`
+        );
+
+        // Bạn có thể tiếp tục xử lý các profile khác
+        continue; // Nếu có lỗi, tiếp tục xử lý profile tiếp theo thay vì dừng chương trình
       }
-
-      if (availableComments.has(comment) && !acceptDupplicateComment) {
-        sendLogToRenderer(`⚠️ Phát hiện comment trùng, bỏ qua!`);
-        continue; // Bỏ qua nếu comment đã gửi và không cho phép trùng lặp
-      }
-
-      await enterTextIntoContentEditable(
-        page,
-        "div[contenteditable='plaintext-only']",
-        comment
-      );
-
-      availableComments.add(comment); // Lưu comment vào Set
-
-      // console.log(`⏳ Đợi ${delay}ms...`);
-      // await new Promise((resolve) => setTimeout(resolve, delay)); // dùng delay từ props
-      sendLogToRenderer(`----------------------------------`);
     }
+
     sendLogToRenderer(`----------------------------------`);
   }
 );
@@ -365,27 +380,36 @@ ipcMain.handle("load-audio", async (_event, filePath: string) => {
 function findChromePath(): string | undefined {
   const platform = os.platform();
 
-  if (platform === 'win32') {
+  if (platform === "win32") {
     const chromePaths = [
-      path.join(process.env['PROGRAMFILES'] || '', 'Google/Chrome/Application/chrome.exe'),
-      path.join(process.env['PROGRAMFILES(X86)'] || '', 'Google/Chrome/Application/chrome.exe'),
-      path.join(process.env['LOCALAPPDATA'] || '', 'Google/Chrome/Application/chrome.exe'),
+      path.join(
+        process.env["PROGRAMFILES"] || "",
+        "Google/Chrome/Application/chrome.exe"
+      ),
+      path.join(
+        process.env["PROGRAMFILES(X86)"] || "",
+        "Google/Chrome/Application/chrome.exe"
+      ),
+      path.join(
+        process.env["LOCALAPPDATA"] || "",
+        "Google/Chrome/Application/chrome.exe"
+      ),
     ];
     return chromePaths.find(fs.existsSync);
-  } else if (platform === 'darwin') {
-    const chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  } else if (platform === "darwin") {
+    const chromePath =
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
     return fs.existsSync(chromePath) ? chromePath : undefined;
-  } else if (platform === 'linux') {
+  } else if (platform === "linux") {
     const chromePaths = [
-      '/usr/bin/google-chrome',
-      '/usr/bin/chromium-browser',
-      '/snap/bin/chromium',
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium-browser",
+      "/snap/bin/chromium",
     ];
     return chromePaths.find(fs.existsSync);
   }
   return undefined;
 }
-
 
 ipcMain.handle(
   "create-chrome-profile",
@@ -399,11 +423,10 @@ ipcMain.handle(
     if (!chromePath) {
       chromePath = puppeteer.executablePath();
     }
-  
+
     if (!chromePath) {
-      throw new Error('Không thể tìm thấy Chrome hoặc Chromium trên máy.');
+      throw new Error("Không thể tìm thấy Chrome hoặc Chromium trên máy.");
     }
-  
 
     const browser: Browser = await launch({
       headless: false,
@@ -432,6 +455,16 @@ function sendLogToRenderer(log: string) {
     win.webContents.send("update-log", log);
   }
 }
+function closeChromeManualToRender(driverIdClose: string) {
+  const win = BrowserWindow.getAllWindows()[0]; // hoặc lưu biến win chính
+  if (win) {
+    win.webContents.send("close-chrome-manual", driverIdClose);
+  }
+}
+
+// ipcRenderer.on("close-chrome-manual", (_event, driverIdClose) => {
+//     callback(driverIdClose);
+//   });
 app.on("before-quit", async (e) => {
   e.preventDefault();
   for (const id in browsers) {

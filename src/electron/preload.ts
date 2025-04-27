@@ -22,7 +22,7 @@ export const backend = {
     proxyPath?: string,
     linkOpenChrome?: string,
     totalProfile?: number,
-    headless?:boolean
+    headless?: boolean
   ): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
     return await ipcRenderer.invoke("open-chrome-profile", {
@@ -31,7 +31,7 @@ export const backend = {
       proxyPath,
       linkOpenChrome,
       totalProfile,
-      headless
+      headless,
     });
   },
 
@@ -51,22 +51,29 @@ export const backend = {
     comments: string,
     delay: number,
     linkLiveStream: string,
-    acceptDupplicateComment:boolean
+    acceptDupplicateComment: boolean
   ): Promise<void> =>
     await ipcRenderer.invoke("seeding-livestream", {
       chromeProfileIds,
       comments,
       delay,
       linkLiveStream,
-      acceptDupplicateComment
+      acceptDupplicateComment,
     }),
 
+  onLogUpdate: (callback: (log: string) => void): void => {
+    ipcRenderer.on("update-log", (_event, log) => {
+      callback(log);
+    });
+  },
 
-    onLogUpdate: (callback: (log: string) => void): void => {
-      ipcRenderer.on("update-log", (_event, log) => {
-        callback(log);
-      });
-    },
+  onListenCloseChromeByUser: (
+    callback: (driverIdClose: string) => void
+  ): void => {
+    ipcRenderer.on("close-chrome-manual", (_event, driverIdClose) => {
+      callback(driverIdClose);
+    });
+  },
 };
 
 contextBridge.exposeInMainWorld("backend", backend);
