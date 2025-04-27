@@ -33,18 +33,11 @@ const App = () => {
     backend.onListenCloseChromeByUser((driverIdClose: string) => {
       chromeStore.closeChromeProfileManual(driverIdClose);
     });
-    // backend.onLogUpdate((log: string) => {
-    //   const type: LogItem["type"] = log.toLowerCase().includes("error")
-    //     ? "error"
-    //     : log.toLowerCase().includes("warning")
-    //     ? "warning"
-    //     : "info";
-
-    //   setLogs((prev) => [
-    //     ...prev,
-    //     { id: counter++, message: log, type }
-    //   ]);
-    // });
+  }, []);
+  useEffect(() => {
+    backend.onListenCloseChromeByUser((driverIdClose: string) => {
+      chromeStore.closeChromeProfileManual(driverIdClose);
+    });
   }, []);
   useEffect(() => {
     chromeStore.resetStateChromeProfile();

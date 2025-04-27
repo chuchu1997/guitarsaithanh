@@ -192,6 +192,27 @@ async function openChromeProfile({
   }
 }
 
+ipcMain.handle("open-chrome-profile", async (_e, params) => {
+  try {
+    const driverId = await openChromeProfile(params);
+    return driverId;
+  } catch (err) {
+    return "";
+  }
+});
+async function detectCaptcha(page: Page, driverID: string): Promise<boolean> {
+  try {
+    // Đợi 1 tí để trang load element (nếu có)
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const captchaExists = await page.$(".captcha-verify-container-main-page");
+
+    return captchaExists !== null;
+  } catch (error) {
+    console.error("Error detecting captcha:", error);
+    return false;
+  }
+}
 async function enterTextIntoContentEditable(
   page: Page,
   selector: string,
@@ -239,15 +260,6 @@ async function enterTextIntoContentEditable(
     throw error; // Nếu cần dừng tiến trình, bạn có thể throw lại
   }
 }
-ipcMain.handle("open-chrome-profile", async (_e, params) => {
-  try {
-    const driverId = await openChromeProfile(params);
-    return driverId;
-  } catch (err) {
-    return "";
-  }
-});
-
 ipcMain.handle(
   "seeding-livestream",
   async (
@@ -313,7 +325,14 @@ ipcMain.handle(
             timeout: 0,
           });
         }
+        const isCaptchaPresent = await detectCaptcha(page, profileId);
+        if (isCaptchaPresent) {
+          sendLogToRenderer(
+            `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
+          );
 
+          continue; // Dừng lại nếu có CAPTCHA và bỏ qua profile này
+        }
         if (availableComments.has(comment) && !acceptDupplicateComment) {
           sendLogToRenderer(`⚠️ Phát hiện comment trùng, bỏ qua!`);
           continue;
