@@ -150,9 +150,22 @@ async function openChromeProfile({
       timeout: 30000, // Nếu quá 30s thì bỏ qua
     });
 
+    const isCaptchaPresent = await detectCaptcha(page);
+    // profileId
+    if (isCaptchaPresent) {
+      sendLogToRenderer(
+        `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
+      );
+      return "";
+    }
+
     /// NEU CO CAPCHA
 
     // GIAI XONG TIEP TUC !!!
+    await page.waitForSelector("div.TUXButton-iconContainer", {
+      visible: true,
+    });
+
     const avatar = await page.$("div.TUXButton-iconContainer img");
 
     const isLoggedIn = avatar !== null;
