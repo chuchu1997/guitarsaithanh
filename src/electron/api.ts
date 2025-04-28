@@ -150,6 +150,9 @@ async function openChromeProfile({
       timeout: 30000, // Nếu quá 30s thì bỏ qua
     });
 
+    /// NEU CO CAPCHA
+
+    // GIAI XONG TIEP TUC !!!
     const avatar = await page.$("div.TUXButton-iconContainer img");
 
     const isLoggedIn = avatar !== null;
@@ -171,6 +174,7 @@ async function openChromeProfile({
         });
       } catch (error) {
         sendLogToRenderer(`⚠️ Lỗi khi cố gắng đăng nhập: ${error}`);
+        return "";
       }
     }
 
@@ -200,7 +204,7 @@ ipcMain.handle("open-chrome-profile", async (_e, params) => {
     return "";
   }
 });
-async function detectCaptcha(page: Page, driverID: string): Promise<boolean> {
+async function detectCaptcha(page: Page): Promise<boolean> {
   try {
     // Đợi 1 tí để trang load element (nếu có)
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -265,12 +269,14 @@ ipcMain.handle(
   async (
     _event: IpcMainInvokeEvent,
     {
+      liveID,
       chromeProfileIds,
       comments,
       delay,
       linkLiveStream,
       acceptDupplicateComment,
     }: {
+      liveID: string;
       chromeProfileIds: string[];
       comments: string;
       delay: number;
@@ -325,12 +331,14 @@ ipcMain.handle(
             timeout: 0,
           });
         }
-        const isCaptchaPresent = await detectCaptcha(page, profileId);
+        const isCaptchaPresent = await detectCaptcha(page);
+        // profileId
         if (isCaptchaPresent) {
           sendLogToRenderer(
             `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
           );
-
+          closeChromeManualToRender(profileId);
+          /// SEND LIVE STREAM ON
           continue; // Dừng lại nếu có CAPTCHA và bỏ qua profile này
         }
         if (availableComments.has(comment) && !acceptDupplicateComment) {

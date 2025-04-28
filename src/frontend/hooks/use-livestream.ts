@@ -28,6 +28,7 @@ const useLiveStreamStore = create(
   persist<LiveStreamStore>(
     (set, get) => ({
       items: [],
+
       update: (data: LiveStreamInfo) => {
         set((state) => ({
           items: state.items.map((item) =>

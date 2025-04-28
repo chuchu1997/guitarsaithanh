@@ -80,7 +80,7 @@ const useChromeStore = create(
 
         try {
           if (targetProfile && !targetProfile.isOpen) {
-            let result = await backend.openChromeWithProfile(
+            const result = await backend.openChromeWithProfile(
               targetProfile.id,
               targetProfile.pathProfile,
               targetProfile.proxy,
@@ -119,7 +119,11 @@ const useChromeStore = create(
         const targetProfile = store.items.find((item) => item.id === id);
         if (!targetProfile) return;
 
-        const updatedProfile = { ...targetProfile, isOpen: false }; // ✅ không mutate
+        const updatedProfile = {
+          ...targetProfile,
+          isOpen: false,
+          injectLiveID: "",
+        }; // ✅ không mutate
         store.updateItem(updatedProfile); // ✅ trigger update trong Zustand
       },
       updateItem: async (data: ChromeProfile) => {

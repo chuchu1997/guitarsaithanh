@@ -34,11 +34,7 @@ const App = () => {
       chromeStore.closeChromeProfileManual(driverIdClose);
     });
   }, []);
-  useEffect(() => {
-    backend.onListenCloseChromeByUser((driverIdClose: string) => {
-      chromeStore.closeChromeProfileManual(driverIdClose);
-    });
-  }, []);
+
   useEffect(() => {
     chromeStore.resetStateChromeProfile();
     liveStreamStore.reset();

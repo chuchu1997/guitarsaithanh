@@ -47,6 +47,7 @@ export const backend = {
     await ipcRenderer.invoke("delete-chrome-profile", pathProfile),
 
   seedingLiveStream: async (
+    liveId:string,
     chromeProfileIds: string[],
     comments: string,
     delay: number,
@@ -54,6 +55,7 @@ export const backend = {
     acceptDupplicateComment: boolean
   ): Promise<void> =>
     await ipcRenderer.invoke("seeding-livestream", {
+      liveId,
       chromeProfileIds,
       comments,
       delay,
@@ -74,6 +76,7 @@ export const backend = {
       callback(driverIdClose);
     });
   },
+ 
 };
 
 contextBridge.exposeInMainWorld("backend", backend);

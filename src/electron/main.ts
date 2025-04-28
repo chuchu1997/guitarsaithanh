@@ -1,9 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
-
-import squirrelStartup from "electron-squirrel-startup"; // Import electron-squirrel-startup
 import "./api";
-
+import squirrelStartup from "electron-squirrel-startup"; // Import electron-squirrel-startup
 if (squirrelStartup) {
   app.quit(); // Quit the app immediately if it's an installer process
 }

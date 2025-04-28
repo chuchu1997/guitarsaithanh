@@ -7,16 +7,24 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import path from "path";
+import { MakerWix } from '@electron-forge/maker-wix';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: path.resolve(__dirname, 'images', 'saithanh'), // icon cho packager (không đuôi)
+
   },
   rebuildConfig: {},
   makers: [
+
     new MakerSquirrel({
       name: "guitar-saithanh-tool",
+      iconUrl: path.resolve(__dirname, 'images', 'saithanh.ico'), // đường dẫn tuyệt đối
+      setupIcon: path.resolve(__dirname, 'images', 'saithanh.ico'),
     }),
+
+
     new MakerZIP({}, ["darwin"]),
     new MakerRpm({}),
     new MakerDeb({}),

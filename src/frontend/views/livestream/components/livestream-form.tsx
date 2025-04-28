@@ -145,6 +145,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       // Gửi danh sách chrome profile để seeding livestream
       const profileIds = selected.map((select) => select.id);
       await backend.seedingLiveStream(
+        liveTarget.id,
         profileIds,
         data.comments,
         data.delay,
