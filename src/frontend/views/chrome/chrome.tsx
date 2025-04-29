@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import useChromeStore, { ChromeProfile } from "@/hooks/use-chromes";
+import useExcuteStore from "@/hooks/use-excute";
 import useSettings from "@/hooks/use-settings";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -15,6 +16,8 @@ const ChromeView = () => {
     location.pathname.startsWith("/chrome/edit");
   const chromeStore = useChromeStore();
   const settingStore = useSettings();
+  const excuteStore = useExcuteStore();
+
   const [isloading, setLoading] = useState(false);
 
   function generateMeaningfulUsername(index: number): string {
@@ -38,18 +41,26 @@ const ChromeView = () => {
   }
   const handleCreateTenProfile = async () => {
     setLoading(true);
+    excuteStore.setLoading(true);
+    excuteStore.setMessageExcute("Đang tự tạo 10 Profile ngẫu nhiên ");
+    const promises: Promise<void>[] = [];
+
     for (let i = 1; i <= 12; i++) {
-      // Dùng từ 1 đến 10
       const profile: ChromeProfile = {
         isOpen: false,
         id: uuidv4(),
         username: generateMeaningfulUsername(i),
-        proxy: "", // Thêm proxy nếu cần
+        proxy: "",
         pathProfile: settingStore.profilePath,
       };
 
-      await chromeStore.addItem(profile);
+      // Không await, mà push vào mảng
+      promises.push(chromeStore.addItem(profile));
     }
+
+    // Đợi tất cả profile được thêm xong cùng lúc
+    await Promise.all(promises);
+    excuteStore.setLoading(false);
     setLoading(false);
   };
   return (
@@ -69,8 +80,7 @@ const ChromeView = () => {
               className="text-sm sm:text-base font-medium"
               onClick={() => {
                 handleCreateTenProfile();
-              }}
-            >
+              }}>
               <Plus /> Tạo mới Profile Ngẫu Nhiên Nhiều Profile (10)
             </Button>
           )}

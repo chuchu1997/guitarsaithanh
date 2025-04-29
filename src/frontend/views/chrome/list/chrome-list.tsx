@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Chrome, X } from "lucide-react";
 import LogStatusComponent from "@/components/log-status";
 import useExcuteStore from "@/hooks/use-excute";
+import toast from "react-hot-toast";
 const ChromeListView = () => {
   const [loading, setLoading] = useState(false);
   const chromeStore = useChromeStore();
@@ -35,14 +36,16 @@ const ChromeListView = () => {
       }`
     );
     setLoading(true);
-    for (const select of selected) {
-      await chromeStore.openChromeProfile(
+    const openPromises = selected.map((select) => {
+      return chromeStore.openChromeProfile(
         select.id,
         selected.length,
         isHeadless
       );
-      await delay(200); // ⏱️ Delay 500ms sau mỗi lần mở
-    }
+    });
+
+    await Promise.all(openPromises); // ⏱️ Mở đồng thời tất cả profiles
+
     setLoading(false);
     excuteStore.setLoading(false);
   };
@@ -53,6 +56,16 @@ const ChromeListView = () => {
       selected.map((select) => chromeStore.closeChromeProfile(select.id))
     );
     excuteStore.setLoading(false);
+    toast.success("Đã đóng profile");
+  };
+  const handleDeleteProfule = async () => {
+    excuteStore.setLoading(true);
+    excuteStore.setMessageExcute("Đang thực hiện xóa profile ");
+    await Promise.all(
+      selected.map((select) => chromeStore.removeItem(select.id))
+    );
+    excuteStore.setLoading(false);
+    toast.success("Đã xóa profile");
   };
 
   return (
@@ -83,6 +96,14 @@ const ChromeListView = () => {
             onClick={handleCloseMultipleProfile}>
             <X className="w-4 h-4" />
             Đóng Chrome Profile
+          </Button>
+          <Button
+            disabled={loading}
+            variant="destructive"
+            className="gap-1"
+            onClick={handleDeleteProfule}>
+            <X className="w-4 h-4" />
+            Xóa Profile
           </Button>
         </div>
       )}

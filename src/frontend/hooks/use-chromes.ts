@@ -139,7 +139,6 @@ const useChromeStore = create(
         await backend.deleteChromeProfile(itemToDelete.pathProfile);
         const newItems = get().items.filter((item) => item.id !== id);
         set({ items: newItems });
-        toast.success("Đã xóa profile");
       },
     }),
     {
