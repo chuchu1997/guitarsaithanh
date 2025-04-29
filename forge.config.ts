@@ -30,8 +30,6 @@ const config: ForgeConfig = {
       } as unknown as MakerSquirrel 
     },
     // new MakerSquirrel({
-    //   // setupExe,
-    //   // setupMsi
     //   name: "guitar-saithanh-tool",
     //   iconUrl: path.resolve(__dirname, 'images', 'saithanh.ico'), // đường dẫn tuyệt đối
     //   setupIcon: path.resolve(__dirname, 'images', 'saithanh.ico'),

@@ -12,6 +12,7 @@ import puppeteer, {
   Page,
   launch,
 } from "puppeteer-core";
+import { forwardRef } from "react";
 // eslint-disable-next-line import/default
 const CHROME_PATH =
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
@@ -120,9 +121,7 @@ async function openChromeProfile({
       },
     });
     browser.on("disconnected", () => {
-      console.log(`🚪 Browser ID ${id} đã bị đóng!`);
       sendLogToRenderer(`❌ Browser với profile ${profileName} đã đóng.`);
-
       // Dọn dẹp tài nguyên nếu cần
       if (browsers[id]) {
         delete browsers[id];
@@ -166,30 +165,30 @@ async function openChromeProfile({
       visible: true,
     });
 
-    const avatar = await page.$("div.TUXButton-iconContainer img");
+    // const avatar = await page.$("div.TUXButton-iconContainer img");
 
-    const isLoggedIn = avatar !== null;
+    // const isLoggedIn = avatar !== null;
 
-    if (isLoggedIn) {
-      sendLogToRenderer(
-        `✅ Trạng thái đăng nhập: (Đã đăng nhập) : ${profileName}`
-      );
-    } else {
-      sendLogToRenderer(
-        `❌ Trạng thái đăng nhập: (Chưa đăng nhập) : ${profileName}`
-      );
+    // if (isLoggedIn) {
+    //   sendLogToRenderer(
+    //     `✅ Trạng thái đăng nhập: (Đã đăng nhập) : ${profileName}`
+    //   );
+    // } else {
+    //   sendLogToRenderer(
+    //     `❌ Trạng thái đăng nhập: (Chưa đăng nhập) : ${profileName}`
+    //   );
 
-      try {
-        await page.waitForSelector("#header-login-button", { timeout: 5000 });
-        await page.evaluate(() => {
-          const loginButton = document.querySelector("#header-login-button");
-          if (loginButton) (loginButton as HTMLElement).click();
-        });
-      } catch (error) {
-        sendLogToRenderer(`⚠️ Lỗi khi cố gắng đăng nhập: ${error}`);
-        return "";
-      }
-    }
+    //   try {
+    //     await page.waitForSelector("#header-login-button", { timeout: 5000 });
+    //     await page.evaluate(() => {
+    //       const loginButton = document.querySelector("#header-login-button");
+    //       if (loginButton) (loginButton as HTMLElement).click();
+    //     });
+    //   } catch (error) {
+    //     sendLogToRenderer(`⚠️ Lỗi khi cố gắng đăng nhập: ${error}`);
+    //     return "";
+    //   }
+    // }
 
     browsers[id] = { browser, page, profilePath };
 
@@ -236,8 +235,11 @@ async function enterTextIntoContentEditable(
   text: string
 ) {
   // Đảm bảo rằng phần tử đã sẵn sàng để tương tác
+  const timeoutMS = 6000;
+  //Mặc định timeout 10S
+
   try {
-    await page.waitForSelector(selector, { visible: true });
+    await page.waitForSelector(selector, { visible: true, timeout: timeoutMS });
     sendLogToRenderer(`🔍 Tìm selector đầu tiên: ${selector}`);
 
     await page.evaluate((sel) => {
@@ -257,7 +259,10 @@ async function enterTextIntoContentEditable(
     sendLogToRenderer(`⌨️ Đã nhập comment: "${text}"`);
 
     const postSvgSelector = 'svg path[d^="M45.7321 7.00001"]';
-    await page.waitForSelector(postSvgSelector, { visible: true });
+    await page.waitForSelector(postSvgSelector, {
+      visible: true,
+      timeout: timeoutMS,
+    });
     sendLogToRenderer(`🔍 Tìm nút gửi comment`);
 
     const postBtn = await page.$(postSvgSelector);
@@ -278,6 +283,69 @@ async function enterTextIntoContentEditable(
   }
 }
 ipcMain.handle(
+  "share-livestream",
+  async (
+    _event: IpcMainInvokeEvent,
+    { chromeIDS, linkLive }: { chromeIDS: string[]; linkLive: string }
+  ) => {
+    console.log("CALL CHROME", chromeIDS);
+    sendLogToRenderer(
+      `🧮 Tổng cộng số lượng profile sẽ chạy share live: ${chromeIDS.length} `
+    );
+    for (const chromeID of chromeIDS) {
+      const instance = browsers[chromeID];
+      if (!instance) {
+        sendLogToRenderer(
+          `⚠️ Không tìm thấy instance cho profile để share: ${chromeID}`
+        );
+        continue;
+      }
+
+      const { page } = instance;
+      const profileName = path.basename(instance.profilePath);
+      try {
+        sendLogToRenderer(`👤 Bắt đầu chạy share profile: ${profileName}`);
+        const currentUrl = page.url();
+        if (currentUrl !== linkLive) {
+          sendLogToRenderer(`👤 Chuyển hướng đến: ${linkLive}`);
+          await page.goto(linkLive, {
+            waitUntil: "networkidle2",
+            timeout: 60000, // 60 second timeout instead of infinite
+          });
+        }
+
+        if (await detectCaptcha(page)) {
+          sendLogToRenderer(
+            `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
+          );
+          closeChromeManualToRender(chromeID);
+          continue;
+        }
+        await page.waitForSelector('i[data-e2e="share-icon"]', {
+          visible: true,
+        });
+        await page.hover('i[data-e2e="share-icon"]');
+
+        await page.waitForSelector('a[data-e2e="share-link"][href="#"]', {
+          visible: true,
+        });
+        // Thực hiện click vào phần tử đó
+        await page.click('a[data-e2e="share-link"][href="#"]');
+        await page.mouse.move(0, 0); // Di chuyển chuột đến góc trên bên trái
+        sendLogToRenderer(`✅ Đã share thành công ở profile: "${profileName}"`);
+
+        ///SHARE DOING
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        sendLogToRenderer(
+          `❌ Lỗi khi share profile ${profileName}: ${errorMessage}`
+        );
+        continue;
+      }
+    }
+  }
+);
+ipcMain.handle(
   "seeding-livestream",
   async (
     _event: IpcMainInvokeEvent,
@@ -297,92 +365,133 @@ ipcMain.handle(
       acceptDupplicateComment: boolean;
     }
   ) => {
-    const shuffled = shuffleArray(chromeProfileIds);
-    const availableComments = new Set<string>();
+    try {
+      // Parse and prepare comments once
+      const commentList = comments
+        .split(/[,\n]/)
+        .map((c) => c.trim())
+        .filter(Boolean);
 
-    sendLogToRenderer(
-      `🧮 Tổng cộng số lượng profile sẽ chạy seeding: ${shuffled.length} profile`
-    );
+      if (commentList.length === 0) {
+        commentList.push("Hello livestream 👋");
+      }
 
-    sendLogToRenderer(
-      `🎯 Chế độ comment: ${
-        acceptDupplicateComment
-          ? "✅ Cho phép trùng"
-          : "🚫 Không cho phép trùng"
-      }`
-    );
+      // Shuffle profile IDs for randomized execution
+      const shuffledProfiles = shuffleArray(chromeProfileIds);
+      const usedComments = new Set<string>();
 
-    for (const profileId of shuffled) {
-      try {
-        const commentList = comments
-          .split(/[,\n]/)
-          .map((c) => c.trim())
-          .filter(Boolean);
+      // Log initial information
+      sendLogToRenderer(
+        `🧮 Tổng cộng số lượng profile sẽ chạy seeding: ${shuffledProfiles.length} profile`
+      );
+      sendLogToRenderer(
+        `🎯 Chế độ comment: ${
+          acceptDupplicateComment
+            ? "✅ Cho phép trùng"
+            : "🚫 Không cho phép trùng"
+        }`
+      );
 
-        const comment =
-          commentList.length > 0
-            ? commentList[Math.floor(Math.random() * commentList.length)]
-            : "Hello livestream 👋";
-
+      // Process each profile
+      for (const profileId of shuffledProfiles) {
         const instance = browsers[profileId];
 
-        if (!instance) continue;
-
-        const profileName = path.basename(instance.profilePath);
-        sendLogToRenderer(`👤 Bắt đầu chạy profile: ${profileName}`);
-
-        const { page } = instance;
-
-        const url = page.url();
-        sendLogToRenderer(`👤 URL: ${url}`);
-        sendLogToRenderer(`👤 LINK LIVE: ${linkLiveStream}`);
-
-        if (url !== linkLiveStream) {
-          sendLogToRenderer(`👤 CO NHAY VAO : ${linkLiveStream}`);
-          await page.goto(linkLiveStream, {
-            waitUntil: "networkidle2",
-            timeout: 0,
-          });
-        }
-        const isCaptchaPresent = await detectCaptcha(page);
-        // profileId
-        if (isCaptchaPresent) {
+        if (!instance) {
           sendLogToRenderer(
-            `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
+            `⚠️ Không tìm thấy instance cho profile: ${profileId}`
           );
-          closeChromeManualToRender(profileId);
-          /// SEND LIVE STREAM ON
-          continue; // Dừng lại nếu có CAPTCHA và bỏ qua profile này
-        }
-        if (availableComments.has(comment) && !acceptDupplicateComment) {
-          sendLogToRenderer(`⚠️ Phát hiện comment trùng, bỏ qua!`);
           continue;
         }
 
-        await enterTextIntoContentEditable(
-          page,
-          "div[contenteditable='plaintext-only']",
-          comment
-        );
+        const { page } = instance;
+        const profileName = path.basename(instance.profilePath);
 
-        availableComments.add(comment);
+        try {
+          sendLogToRenderer(`👤 Bắt đầu chạy profile: ${profileName}`);
 
-        sendLogToRenderer(`----------------------------------`);
-      } catch (err) {
-        console.error("Lỗi xử lý profile:", err);
+          // Navigate to livestream if needed
+          const currentUrl = page.url();
+          if (currentUrl !== linkLiveStream) {
+            sendLogToRenderer(`👤 Chuyển hướng đến: ${linkLiveStream}`);
+            await page.goto(linkLiveStream, {
+              waitUntil: "networkidle2",
+              timeout: 60000, // 60 second timeout instead of infinite
+            });
+          }
 
-        sendLogToRenderer(
-          `❌ Lỗi trong khi xử lý profile ${profileId}: ${
-            (err as Error).message
-          }`
-        );
+          // Check for CAPTCHA
+          if (await detectCaptcha(page)) {
+            sendLogToRenderer(
+              `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
+            );
+            closeChromeManualToRender(profileId);
+            continue;
+          }
 
-        // Bạn có thể tiếp tục xử lý các profile khác
-        continue; // Nếu có lỗi, tiếp tục xử lý profile tiếp theo thay vì dừng chương trình
+          // Select and validate comment
+          let selectedComment;
+          const maxAttempts = 5; // Prevent infinite loop with duplicate comments
+          let attempts = 0;
+
+          do {
+            selectedComment =
+              commentList[Math.floor(Math.random() * commentList.length)];
+            attempts++;
+
+            if (attempts >= maxAttempts) {
+              sendLogToRenderer(
+                `⚠️ Không tìm thấy comment khác sau ${maxAttempts} lần thử, sử dụng comment trùng.`
+              );
+              break;
+            }
+          } while (
+            !acceptDupplicateComment &&
+            usedComments.has(selectedComment)
+          );
+
+          if (
+            !acceptDupplicateComment &&
+            usedComments.has(selectedComment) &&
+            attempts < maxAttempts
+          ) {
+            sendLogToRenderer(
+              `⚠️ Phát hiện comment trùng, bỏ qua profile này!`
+            );
+            continue;
+          }
+
+          // Post the comment
+          await enterTextIntoContentEditable(
+            page,
+            "div[contenteditable='plaintext-only']",
+            selectedComment
+          );
+
+          usedComments.add(selectedComment);
+          sendLogToRenderer(`✅ Đã gửi comment: "${selectedComment}"`);
+          sendLogToRenderer(`----------------------------------`);
+
+          // Wait before processing next profile
+          await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          sendLogToRenderer(
+            `❌ Lỗi khi xử lý profile ${profileName}: ${errorMessage}`
+          );
+          continue;
+        }
       }
-    }
 
-    sendLogToRenderer(`----------------------------------`);
+      sendLogToRenderer(`✅ Hoàn thành quá trình seeding livestream`);
+      sendLogToRenderer(`----------------------------------`);
+
+      // Function is void, no return value
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      sendLogToRenderer(
+        `❌ Lỗi nghiêm trọng trong quá trình seeding: ${errorMessage}`
+      );
+    }
   }
 );
 

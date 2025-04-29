@@ -38,6 +38,11 @@ export const backend = {
   closeChrome: async (id: string): Promise<boolean> => {
     return await ipcRenderer.invoke("close-chrome-profile", id);
   },
+  shareLiveStream: async (chromeIDS:string[],linkLive:string) => {
+    console.log("SEND PRELOAD",chromeIDS)
+    return await ipcRenderer.invoke("share-livestream",{chromeIDS,linkLive})
+    // return await ipcRenderer.invoke("close-chrome-profile", id);
+  },
 
   loadAudio: async (path: string): Promise<string> => {
     return await ipcRenderer.invoke("load-audio", path);
@@ -68,6 +73,7 @@ export const backend = {
       callback(log);
     });
   },
+ 
 
   onListenCloseChromeByUser: (
     callback: (driverIdClose: string) => void

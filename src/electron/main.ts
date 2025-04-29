@@ -7,12 +7,7 @@ import * as path from 'path';
 
 // if (squirrelStartup) {
 //   app.quit(); // Quit the app immediately if it's an installer process
-
-
-  
-
 // }
-
 
 // this should be placed at top of main.js to handle setup events quickly
 if (handleSquirrelEvent()) {

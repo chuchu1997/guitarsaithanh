@@ -6,7 +6,6 @@ import { ColumnDef } from "@tanstack/react-table";
 export type LiveStreamColumn = {
   id: string;
   name: string;
-  injectLive: string;
   proxy: string;
   pathProfile: string;
   isOpen: boolean;
@@ -25,7 +24,7 @@ export const columns: ColumnDef<LiveStreamColumn>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        checked={row.getIsSelected() ?? row.original.isCheckChooseChrome}
+        checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Chọn dòng"
       />

@@ -3,7 +3,7 @@
 import toast from "react-hot-toast";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { ChromeProfile } from "./use-chromes";
+// import { ChromeProfile } from "./use-chromes";
 // Định nghĩa interface cho settings
 
 export interface LiveStreamInfo {

@@ -23,6 +23,7 @@ import { columns, LiveStreamColumn } from "./column";
 import toast from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import LogStatusComponent from "@/components/log-status";
+import useExcuteStore from "@/hooks/use-excute";
 interface LiveStreamPageProps {
   id: string;
 }
@@ -38,9 +39,11 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
 
   const [fileName, setFileName] = useState("");
   const chromeStore = useChromeStore();
-  const [loading, setLoading] = useState(false);
   const liveStreamStore = useLiveStreamStore();
   const liveTarget = useLiveStreamStore((state) => state.getItemWithID(id));
+  const excuteStore = useExcuteStore();
+
+  const isLoadingExcute = useExcuteStore((state) => state.isLoading);
 
   const [selected, setSelected] = useState<LiveStreamColumn[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,9 +63,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
   //     (item) => item.injectLiveStream === "" || item.injectLiveStream === null
   //   );
   const chromeProfileAvailable = chromeStore.items.filter(
-    (item) =>
-      item.isOpen &&
-      (!item.injectLiveStreamID || item.injectLiveStreamID === id)
+    (item) => item.isOpen
   );
 
   const formatColumn: LiveStreamColumn[] = chromeProfileAvailable.map(
@@ -71,9 +72,8 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       name: item.username,
       proxy: item.proxy,
       pathProfile: item.pathProfile,
-      injectLive: item.injectLiveStreamID,
       isOpen: item.isOpen,
-      isCheckChooseChrome: item.injectLiveStreamID === id ? true : false,
+      isCheckChooseChrome: false,
     })
   );
 
@@ -122,17 +122,11 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
     }
 
     try {
-      setLoading(true);
-
+      excuteStore.setLoading(true);
+      excuteStore.setMessageExcute(
+        `Đang thực hiện seeding cho livestream (${liveTarget.name})`
+      );
       // Cập nhật profile với livestream ID
-      for (const select of selected) {
-        const profile = chromeStore.getChromeProfileWithID(select.id);
-        if (profile) {
-          profile.injectLiveStreamID = id;
-          chromeStore.updateItem(profile);
-        }
-      }
-
       // Cập nhật thông tin livestream
       liveStreamStore.update({
         id: liveTarget.id,
@@ -152,15 +146,26 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
         data.link,
         data.acceptDupplicateComment
       );
-      toast.success("✅Đã seeding livestream");
     } catch (error) {
-      console.error("❌ Lỗi khi gửi dữ liệu:", error);
-      toast.error("Đã xảy ra lỗi khi bắt đầu seeding");
+      excuteStore.setLoading(false);
     } finally {
-      setLoading(false);
+      excuteStore.setLoading(false);
     }
   };
 
+  const onShareLiveStream = async () => {
+    const chromeIDS = selected.map((select) => select.id);
+
+    const liveLink = form.getValues("link");
+    if (chromeIDS.length > 0 && liveLink != "") {
+      excuteStore.setLoading(true);
+      excuteStore.setMessageExcute(
+        `Đang thực hiện share cho livestream (${liveTarget.name})`
+      );
+      await backend.shareLiveStream(chromeIDS, liveLink);
+      excuteStore.setLoading(false);
+    }
+  };
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -260,8 +265,14 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
             )}
           />
 
-          <div className="text-right">
-            <Button type="submit" disabled={loading}>
+          <div className="text-right flex justify-end gap-4">
+            <Button
+              type="button"
+              disabled={isLoadingExcute}
+              onClick={onShareLiveStream}>
+              Share LiveStream
+            </Button>
+            <Button type="submit" disabled={isLoadingExcute}>
               Bắt Đầu Seeding
             </Button>
           </div>

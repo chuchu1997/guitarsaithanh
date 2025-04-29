@@ -20,6 +20,7 @@ import SoundboardEditView from "./views/sound-board/edit/sound-board-edit";
 import SettingView from "./views/setting/setting";
 import useChromeStore from "./hooks/use-chromes";
 import useLiveStreamStore from "./hooks/use-livestream";
+import { LoadingOverlay } from "./components/loading-overlay";
 
 // import useChromeStore from "./stores/use-chrome-store"; // đảm bảo import đúng path
 
@@ -44,6 +45,8 @@ const App = () => {
     <HashRouter>
       <div className="flex h-screen w-screen overflow-hidden">
         <Toaster />
+        <LoadingOverlay />
+
         <aside className="w-64 bg-gray-900 text-white p-4">
           <AppSidebar />
         </aside>

@@ -11,7 +11,6 @@ export interface ChromeProfile {
   proxy: string;
   pathProfile: string;
   isOpen: boolean;
-  injectLiveStreamID?: string;
 }
 
 export interface ChromeStore {

@@ -33,6 +33,7 @@ const LivestreamSeedingView = () => {
         name: newName,
         comments: "",
         delay: 1,
+        acceptDupplicateComment: false,
       });
       setNewName("");
       setDialogOpen(false);
