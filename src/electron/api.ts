@@ -456,6 +456,110 @@ ipcMain.handle(
 // }
 
 ipcMain.handle(
+  "seeding-livestream-batch",
+  async (
+    _event: IpcMainInvokeEvent,
+    {
+      chromeProfileIds,
+      comments,
+
+      linkLiveStream,
+    }: {
+      chromeProfileIds: string[];
+      comments: string;
+
+      linkLiveStream: string;
+    }
+  ) => {
+    try {
+      // Parse comments and ensure no duplicates
+      const commentList = Array.from(
+        new Set(
+          comments
+            .split(/[\n,]/)
+            .map((c) => c.trim())
+            .filter(Boolean)
+        )
+      );
+      const profileQueue = [...chromeProfileIds];
+      const batchSize = 10;
+
+      sendLogToRenderer(`🧮 Tổng số profile: ${profileQueue.length}`);
+      sendLogToRenderer(`📝 Tổng số comment: ${commentList.length}`);
+
+      let batchCount = 0;
+      while (commentList.length > 0) {
+        const batchProfiles = profileQueue.splice(0, batchSize);
+        const batchComments = commentList.splice(0, batchSize);
+
+        sendLogToRenderer(
+          `🚀 Batch ${++batchCount}: Chạy ${batchProfiles.length} profile với ${
+            batchComments.length
+          } comment`
+        );
+
+        await Promise.all(
+          batchProfiles.map(async (profileId, index) => {
+            const instance = browsers[profileId];
+            if (!instance) {
+              sendLogToRenderer(
+                `⚠️ Không tìm thấy instance cho profile: ${profileId}`
+              );
+              return;
+            }
+
+            const { page } = instance;
+            const profileName = path.basename(instance.profilePath);
+            const comment = batchComments[index];
+
+            try {
+              sendLogToRenderer(`👤 Đang chạy profile: ${profileName}`);
+              await page.goto(linkLiveStream, {
+                waitUntil: "networkidle2",
+                timeout: 60000,
+              });
+
+              // Check for CAPTCHA
+              if (await detectCaptcha(page)) {
+                sendLogToRenderer(`❌ CAPTCHA trên ${profileName}, bỏ qua`);
+                await closeChromeManualToRender(profileId);
+                return;
+              }
+
+              // Comment on livestream
+              await enterTextIntoContentEditable(
+                page,
+                "div[contenteditable='plaintext-only']",
+                comment
+              );
+              sendLogToRenderer(`✅ ${profileName} đã comment: "${comment}"`);
+            } catch (err) {
+              sendLogToRenderer(
+                `❌ Lỗi với ${profileName}: ${
+                  err instanceof Error ? err.message : String(err)
+                }`
+              );
+            }
+          })
+        );
+
+        // Đợi 1 phút trước khi chạy batch tiếp theo
+        sendLogToRenderer(`⏳ Chờ ${1} giây trước khi chạy batch tiếp theo`);
+        await new Promise((resolve) => setTimeout(resolve, 1 * 1000));
+      }
+
+      sendLogToRenderer(`✅ Hoàn tất seeding livestream`);
+    } catch (err) {
+      sendLogToRenderer(
+        `❌ Lỗi nghiêm trọng: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    }
+  }
+);
+
+ipcMain.handle(
   "seeding-livestream",
   async (
     _event: IpcMainInvokeEvent,

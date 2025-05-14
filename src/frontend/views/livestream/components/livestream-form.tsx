@@ -33,6 +33,7 @@ const formSchema = z.object({
   delay: z.coerce.number().min(1, { message: "Delay tối thiểu là 1 giây" }),
   link: z.string().url({ message: "Link không hợp lệ" }),
   acceptDupplicateComment: z.boolean().optional(),
+  autoComment60s: z.boolean().optional(),
 });
 const LivestreamSeedingView = (props: LiveStreamPageProps) => {
   const { id } = props;
@@ -56,6 +57,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
     defaultValues: {
       comments: liveTarget.comments,
       delay: liveTarget.delay,
+      autoComment60s:false,
       link:
         liveTarget.linkLive.trim() == ""
           ? "https://www.tiktok.com/@guitarsaithanh/live"
@@ -149,14 +151,28 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       });
       // Gửi danh sách chrome profile để seeding livestream
       const profileIds = selected.map((select) => select.id);
-      await backend.seedingLiveStream(
-        liveTarget.id,
-        profileIds,
-        data.comments,
-        data.delay,
-        data.link,
-        data.acceptDupplicateComment
-      );
+
+      if(data.autoComment60s){
+        await backend.seedingLiveStreamAutoCommentAfter60s(
+          liveTarget.id,
+          profileIds,
+          data.comments,
+   
+          data.link,
+  
+        )
+      }
+      else{
+        await backend.seedingLiveStream(
+          liveTarget.id,
+          profileIds,
+          data.comments,
+          data.delay,
+          data.link,
+          data.acceptDupplicateComment
+        );
+      }
+     
     } catch (error) {
       excuteStore.setLoading(false);
     } finally {
@@ -250,6 +266,21 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
               </FormItem>
             )}
           />
+             <FormField
+            control={form.control}
+            name="autoComment60s"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Auto Comment Sau 60s</FormLabel>
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
@@ -297,6 +328,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
             <Button type="submit" disabled={isLoadingExcute}>
               Bắt Đầu Seeding
             </Button>
+          
           </div>
         </form>
       </Form>

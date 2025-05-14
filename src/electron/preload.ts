@@ -68,6 +68,21 @@ export const backend = {
       acceptDupplicateComment,
     }),
 
+
+    seedingLiveStreamAutoCommentAfter60s:async(
+      liveId:string,
+      chromeProfileIds: string[],
+      comments: string,
+      linkLiveStream: string,
+   
+    ):Promise<void>=> await ipcRenderer.invoke('seeding-livestream-batch',{
+      liveId,
+      chromeProfileIds,
+      comments,
+   
+      linkLiveStream,
+ 
+    }),
   onLogUpdate: (callback: (log: string) => void): void => {
     ipcRenderer.on("update-log", (_event, log) => {
       callback(log);
