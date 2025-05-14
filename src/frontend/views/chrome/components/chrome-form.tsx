@@ -76,7 +76,7 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
         isOpen: values.isOpen,
         id: values.id,
         username: values.username,
-        proxy: values.proxy ?? "",
+        proxy: values.proxy.trim() ?? "",
         pathProfile: values.pathProfile,
       };
 

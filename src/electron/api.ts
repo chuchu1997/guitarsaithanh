@@ -85,6 +85,7 @@ async function openChromeProfile({
     if (!fs.existsSync(userAgentPath)) {
       fs.writeFileSync(userAgentPath, userAgent);
     }
+    sendLogToRenderer(`✅  Profile Path ${profilePath}.`);
 
     const args = [
       `--user-data-dir=${profilePath}`,
@@ -110,6 +111,7 @@ async function openChromeProfile({
     if (!chromePath) {
       chromePath = puppeteer.executablePath();
     }
+    sendLogToRenderer(`🖥️ Đường dẫn chrome Exe: ${chromePath}`);
 
     const browser = await launch({
       headless: headless,
@@ -138,8 +140,14 @@ async function openChromeProfile({
     await page.setUserAgent(userAgent);
 
     if (proxyPath) {
-      const [, , username, password] = proxyPath.split(":");
-      await page.authenticate({ username, password });
+      const [ip, port, username, password] = proxyPath.split(":");
+      sendLogToRenderer(`✅  IP proxy ${ip}.`);
+      sendLogToRenderer(`✅  Pass proxy ${port}.`);
+      sendLogToRenderer(`✅  User name proxy ${username}.`);
+      sendLogToRenderer(`✅  Pass proxy ${password}.`);
+      if (username && password) {
+        await page.authenticate({ username, password });
+      }
       sendLogToRenderer(`✅ Có sử dụng proxy và đã xác thực`);
     } else {
       sendLogToRenderer(`❌ Không có proxy được sử dụng.`);

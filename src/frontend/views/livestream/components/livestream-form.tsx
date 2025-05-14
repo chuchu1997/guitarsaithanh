@@ -52,9 +52,9 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       comments: liveTarget.comments,
       delay: liveTarget.delay,
       link:
-        liveTarget.linkLive == ""
+        liveTarget.linkLive.trim() == ""
           ? "https://www.tiktok.com/@guitarsaithanh/live"
-          : liveTarget.linkLive,
+          : liveTarget.linkLive.trim(),
       acceptDupplicateComment: liveTarget.acceptDupplicateComment ?? false,
     },
   });
