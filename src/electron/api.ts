@@ -774,11 +774,9 @@ ipcMain.handle(
 app.on("before-quit", async (e) => {
   e.preventDefault();
 
-  // Close all browsers before quitting
-  const closingPromises = Object.values(browsers).map(({ browser }) =>
-    browser.close()
-  );
-  await Promise.all(closingPromises);
+  for (const { browser } of Object.values(browsers)) {
+    await browser.close(); // đảm bảo đóng xong từng browser
+  }
 
   app.quit();
 });
