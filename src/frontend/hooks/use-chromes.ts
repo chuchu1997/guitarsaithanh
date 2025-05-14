@@ -24,7 +24,7 @@ export interface ChromeStore {
     totalProfile?: number,
     headless?: boolean
   ) => void;
-  closeChromeProfile: (id: string) => void;
+  closeChromeProfile: (id: string) => Promise<void>;
   closeChromeProfileManual: (id: string) => void;
 
   resetStateChromeProfile: () => void;
@@ -103,12 +103,12 @@ const useChromeStore = create(
       },
       closeChromeProfile: async (id: string) => {
         const store = get();
-        const result = await backend.closeChrome(id); // result: boolean = true/false
+        await backend.closeChrome(id); // result: boolean = true/false
 
         const targetProfile = store.items.find((item) => item.id === id);
         if (!targetProfile) return;
 
-        const updatedProfile = { ...targetProfile, isOpen: result }; // ✅ không mutate
+        const updatedProfile = { ...targetProfile, isOpen: false }; // ✅ không mutate
 
         store.updateItem(updatedProfile); // ✅ trigger update trong Zustand
       },

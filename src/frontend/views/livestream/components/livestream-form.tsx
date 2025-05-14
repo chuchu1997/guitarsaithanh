@@ -1,6 +1,6 @@
-/** @format */
 
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import useChromeStore from "@/hooks/use-chromes";
 import useLiveStreamStore from "@/hooks/use-livestream";
 import { z } from "zod";
@@ -37,6 +37,8 @@ const formSchema = z.object({
 const LivestreamSeedingView = (props: LiveStreamPageProps) => {
   const { id } = props;
 
+  
+
   const [fileName, setFileName] = useState("");
   const chromeStore = useChromeStore();
   const liveStreamStore = useLiveStreamStore();
@@ -46,6 +48,9 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
   const isLoadingExcute = useExcuteStore((state) => state.isLoading);
 
   const [selected, setSelected] = useState<LiveStreamColumn[]>([]);
+  const [formatColumn,setFormatColumn] = useState<LiveStreamColumn[]>([]);
+
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,24 +63,30 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       acceptDupplicateComment: liveTarget.acceptDupplicateComment ?? false,
     },
   });
-
+ 
   //   const chromeProfileAvailable = chromeStore.items.filter(
   //     (item) => item.injectLiveStream === "" || item.injectLiveStream === null
   //   );
   const chromeProfileAvailable = chromeStore.items.filter(
     (item) => item.isOpen
   );
-
-  const formatColumn: LiveStreamColumn[] = chromeProfileAvailable.map(
-    (item) => ({
+  useEffect(() => {
+    const temp: LiveStreamColumn[] = chromeProfileAvailable.map((item) => ({
       id: item.id,
       name: item.username,
       proxy: item.proxy,
       pathProfile: item.pathProfile,
       isOpen: item.isOpen,
-      isCheckChooseChrome: false,
-    })
-  );
+    }));
+  
+    // Only update state if the value has changed
+    if (JSON.stringify(temp) !== JSON.stringify(formatColumn)) {
+      setFormatColumn(temp);
+    }
+  }, [chromeProfileAvailable, formatColumn]);
+
+
+ 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -158,21 +169,32 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
 
     const liveLink = form.getValues("link");
     if (chromeIDS.length > 0 && liveLink != "") {
-      excuteStore.setLoading(true);
-      excuteStore.setMessageExcute(
-        `Đang thực hiện share cho livestream (${liveTarget.name})`
-      );
-      await backend.shareLiveStream(chromeIDS, liveLink);
-      excuteStore.setLoading(false);
+    
+      try{
+        excuteStore.setLoading(true);
+        excuteStore.setMessageExcute(
+          `Đang thực hiện share cho livestream (${liveTarget.name})`
+        );
+        await backend.shareLiveStream(chromeIDS, liveLink);
+        excuteStore.setLoading(false);
+      }catch(err){
+        toast.error("Chưa đăng nhập không thể share")
+        excuteStore.setLoading(false);
+      }
+   
     }
+
   };
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow space-y-6">
+    <div className=" mx-auto p-6 bg-white rounded-lg shadow space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-2">
         Seeding Livestream ({liveTarget.name})
       </h2>
+
       <DataTable
         onSelectionChange={(selected) => {
+          console.log("Selected rows:", selected);
+
           setSelected(selected);
         }}
         searchKey="name"

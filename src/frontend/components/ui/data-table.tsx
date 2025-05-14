@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +27,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   searchKey: string;
-  onSelectionChange?: (selected: TData[]) => void; // callback gửi dữ liệu ra ngoài
+  onSelectionChange?: (selected: TData[]) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,17 +40,8 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
-    () => {
-      const initialSelection: RowSelectionState = {};
-      data.forEach((item, index) => {
-        if ((item as any).isCheckChooseChrome) {
-          initialSelection[index] = true;
-        }
-      });
-      return initialSelection;
-    }
-  );
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+  const lastSelectedIndexRef = React.useRef<number | null>(null);
 
   const table = useReactTable({
     data,
@@ -65,17 +58,52 @@ export function DataTable<TData, TValue>({
       const newRowSelection =
         typeof updater === "function" ? updater(rowSelection) : updater;
       setRowSelection(newRowSelection);
-
       const selectedRows = Object.keys(newRowSelection)
         .filter((key) => newRowSelection[key])
         .map((key) => {
           const rowIndex = parseInt(key);
           return table.getRowModel().rows[rowIndex]?.original;
         })
-        .filter(Boolean); // Filter out any undefined entries
+        .filter(Boolean);
       onSelectionChange?.(selectedRows);
     },
   });
+
+  // Xử lý khi nhấn Shift để chọn nhiều dòng
+  const handleRowClick = (event: React.MouseEvent, rowIndex: number) => {
+    const shiftKey = event.shiftKey;
+    const updatedSelection = { ...rowSelection };
+
+    if (shiftKey && lastSelectedIndexRef.current !== null) {
+      const start = Math.min(lastSelectedIndexRef.current, rowIndex);
+      const end = Math.max(lastSelectedIndexRef.current, rowIndex);
+
+      for (let i = start; i <= end; i++) {
+        updatedSelection[i] = true;
+      }
+    } else {
+      updatedSelection[rowIndex] = !updatedSelection[rowIndex];
+    }
+
+    setRowSelection(updatedSelection);
+    lastSelectedIndexRef.current = rowIndex;
+
+    const selectedRows = Object.keys(updatedSelection)
+      .filter((key) => updatedSelection[parseInt(key)])
+      .map((key) => {
+        const idx = parseInt(key);
+        return table.getRowModel().rows[idx]?.original;
+      })
+      .filter(Boolean);
+
+    onSelectionChange?.(selectedRows);
+  };
+
+  // Reset lựa chọn khi dữ liệu thay đổi
+  React.useEffect(() => {
+    setRowSelection({});
+    lastSelectedIndexRef.current = null;
+  }, [data]);
 
   return (
     <div>
@@ -109,11 +137,14 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row, index) => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                >
+                  onClick={(event) => handleRowClick(event, index)}
+                  className={`cursor-pointer ${
+                    row.getIsSelected() ? "bg-gray-100" : ""
+                  }`}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
@@ -128,8 +159,7 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                  className="h-24 text-center">
                   Chưa có thông tin !!
                 </TableCell>
               </TableRow>

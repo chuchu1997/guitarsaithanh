@@ -17,17 +17,18 @@ import { v4 as uuidv4 } from "uuid";
 import LiveStreamForm from "./components/livestream-form";
 
 const LivestreamSeedingView = () => {
-  const liveStreamStore = useLiveStreamStore();
-
   const items = useLiveStreamStore((state) => state.items);
+  const addItem = useLiveStreamStore((state) => state.addItem);
+
   // const addLiveStream = useLiveStreamStore((state) => state.addLiveStream); // Cần có trong store
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
 
   const handleCreate = () => {
+    console.log("CALL FOR THIS !!");
     if (newName.trim() !== "") {
       // addLiveStream({ id: crypto.randomUUID(), name: newName });
-      liveStreamStore.addItem({
+      addItem({
         id: uuidv4(),
         linkLive: "",
         name: newName,
@@ -35,13 +36,14 @@ const LivestreamSeedingView = () => {
         delay: 1,
         acceptDupplicateComment: false,
       });
+
       setNewName("");
       setDialogOpen(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow space-y-6">
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow space-y-6">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-2xl font-bold text-gray-800">
           Cấu hình Seeding Livestream
@@ -60,7 +62,9 @@ const LivestreamSeedingView = () => {
               placeholder="Nhập tên livestream..."
             />
             <DialogFooter>
-              <Button onClick={handleCreate}>Tạo</Button>
+              <Button type="button" onClick={handleCreate}>
+                Tạo
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -68,7 +72,7 @@ const LivestreamSeedingView = () => {
 
       <div className="content-tabs">
         {items.length > 0 ? (
-          <Tabs defaultValue={items[0]?.id} className="w-full">
+          <Tabs defaultValue={items[0].id} className="w-full">
             <TabsList>
               {items.map((item) => (
                 <TabsTrigger key={item.id} value={item.id}>
@@ -79,10 +83,6 @@ const LivestreamSeedingView = () => {
             {items.map((item) => (
               <TabsContent key={item.id} value={item.id}>
                 <LiveStreamForm id={item.id} />
-                {/* <div>
-                  <h3 className="text-lg font-semibold mb-2">{item.name}</h3>
-                  <p>ID Livestream: {item.id}</p>
-                </div> */}
               </TabsContent>
             ))}
           </Tabs>

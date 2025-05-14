@@ -2,6 +2,7 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnDef } from "@tanstack/react-table";
+import { CaptionsIcon, CaptionsOffIcon } from "lucide-react";
 
 export type LiveStreamColumn = {
   id: string;
@@ -9,7 +10,6 @@ export type LiveStreamColumn = {
   proxy: string;
   pathProfile: string;
   isOpen: boolean;
-  isCheckChooseChrome: boolean;
 };
 
 export const columns: ColumnDef<LiveStreamColumn>[] = [
@@ -50,6 +50,22 @@ export const columns: ColumnDef<LiveStreamColumn>[] = [
   {
     accessorKey: "status",
     header: "Trạng thái",
-    cell: ({ row }) => <>{row.original.isOpen ? "Đang mở " : "Đang tắt"}</>,
+    cell: ({ row }) => (
+      <>
+        {row.original.isOpen ? (
+          <div className="bg-gradient-to-r inline-block from-green-400 to-teal-500 text-white font-semibold text-sm py-1 px-4 rounded-lg italic shadow-sm transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md">
+            <div className="flex items-center gap-x-2 ">
+              <span>Đang mở</span> <CaptionsIcon size={18} />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r inline-block from-red-400 to-red-900 text-white font-semibold text-sm py-1 px-4 rounded-lg italic shadow-sm transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md">
+            <div className="flex items-center gap-x-2 ">
+              <span>Đang tắt</span> <CaptionsOffIcon size={18} />
+            </div>
+          </div>
+        )}
+      </>
+    ),
   },
 ];

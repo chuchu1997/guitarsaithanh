@@ -9,14 +9,17 @@ import {
 import { Loader2 } from "lucide-react";
 import useExcuteStore from "@/hooks/use-excute";
 import meoGif from "../images/meo.gif";
+import { DialogTitle } from "@radix-ui/react-dialog";
 
 export const LoadingOverlay = () => {
   const isLoading = useExcuteStore((state) => state.isLoading);
   const message = useExcuteStore((state) => state.messageExcute);
+  console.log("Loading state:", isLoading); // Thêm log để kiểm tra
 
   return (
     <Dialog open={isLoading}>
       <DialogPortal>
+        <DialogTitle></DialogTitle>
         <DialogOverlay className="bg-black/50 fixed inset-0 z-50" />
         <DialogContent className="border-0 shadow-none bg-transparent p-0 flex flex-col items-center justify-center gap-4 [&>button]:hidden">
           <div className="flex flex-col items-center justify-center">

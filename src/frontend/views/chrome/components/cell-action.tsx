@@ -11,12 +11,14 @@ import { AlertModal } from "@/components/modals/alert-modal";
 import ActionDropdown from "@/components/action-dropdown";
 import { useNavigate } from "react-router-dom";
 import useChromeStore from "@/hooks/use-chromes";
+import useExcuteStore from "@/hooks/use-excute";
 interface CellActionProps {
   data: ChromeColumn;
 }
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const navigate = useNavigate(); // ✅ React Router navigate
   const chromeStore = useChromeStore();
+  const excuteStore = useExcuteStore();
 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -29,15 +31,14 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     navigate(`/chrome/edit/${data.id}`);
   };
   const onDelete = async () => {
-    try {
-      setLoading(true);
-      chromeStore.removeItem(data.id);
-      navigate("/chrome");
-    } catch (err) {
-      toast.error("Có lỗi ở đâu đó   !!");
-    } finally {
-      setLoading(false);
-    }
+    excuteStore.setLoading(true);
+    setLoading(true);
+    excuteStore.setMessageExcute("Đang thực hiện xóa profile ");
+    chromeStore.removeItem(data.id);
+    excuteStore.setLoading(false);
+    setLoading(false);
+    toast.success("Đã xóa profile");
+    navigate("/chrome");
   };
   const onOpenChrome = async () => {
     await chromeStore.openChromeProfile(data.id, 1, false);
