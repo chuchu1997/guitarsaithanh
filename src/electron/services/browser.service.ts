@@ -209,8 +209,8 @@ export async function createChromeProfile(
   }
 
   // Find Chrome path
-  const chromePath = findChromePath() || puppeteer.executablePath();
-  if (!chromePath) {
+  const edgePath = findEdgePath() || puppeteer.executablePath();
+  if (!edgePath) {
     throw new Error("Không thể tìm thấy Chrome hoặc Chromium trên máy.");
   }
 
@@ -218,7 +218,7 @@ export async function createChromeProfile(
   try {
     const browser = await puppeteer.launch({
       headless: false,
-      executablePath: chromePath,
+      executablePath: edgePath,
       userDataDir: fullProfilePath,
       args: ["--no-first-run", "--no-default-browser-check"],
     });
