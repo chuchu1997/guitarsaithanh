@@ -79,14 +79,19 @@ const useChromeStore = create(
 
         try {
           if (targetProfile && !targetProfile.isOpen) {
-            const result = await backend.openChromeWithProfile(
-              targetProfile.id,
-              targetProfile.pathProfile,
-              targetProfile.proxy,
-              "",
-              totalProfile,
-              headless
-            );
+            const result = await backend.openChromeWithProfile({
+              id: targetProfile.id,
+              profilePath: targetProfile.pathProfile,
+              totalProfile: totalProfile,
+              headless: headless,
+
+              // targetProfile.id,
+              // targetProfile.pathProfile,
+              // targetProfile.proxy,
+              // "",
+              // totalProfile,
+              // headless
+            });
 
             updatedProfile = {
               ...targetProfile,

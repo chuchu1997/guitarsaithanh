@@ -7,7 +7,6 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import path from "path";
-import { MakerWix } from '@electron-forge/maker-wix';
 
 const config: ForgeConfig = {
   packagerConfig: {

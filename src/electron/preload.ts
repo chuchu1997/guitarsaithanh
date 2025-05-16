@@ -2,6 +2,8 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from "electron";
 import { WebDriver } from "selenium-webdriver";
+import { ProfileParams } from "./types";
+import { CommentParams, ShareParams } from "./services/social-seeding/base";
 
 export const backend = {
   nodeVersion: async (msg: string): Promise<string> =>
@@ -17,32 +19,17 @@ export const backend = {
     });
   },
   openChromeWithProfile: async (
-    id: string,
-    profilePath: string,
-    proxyPath?: string,
-    linkOpenChrome?: string,
-    totalProfile?: number,
-    headless?: boolean
+  params:ProfileParams
   ): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
-    return await ipcRenderer.invoke("open-chrome-profile", {
-      id: id,
-      profilePath,
-      proxyPath,
-      linkOpenChrome,
-      totalProfile,
-      headless,
-    });
+    console.log("CALL NE ",params);
+    return await ipcRenderer.invoke("open-chrome-profile", params);
   },
 
   closeChrome: async (id: string): Promise<boolean> => {
     return await ipcRenderer.invoke("close-chrome-profile", id);
   },
-  shareLiveStream: async (chromeIDS:string[],linkLive:string) => {
-    console.log("SEND PRELOAD",chromeIDS)
-    return await ipcRenderer.invoke("share-livestream",{chromeIDS,linkLive})
-    // return await ipcRenderer.invoke("close-chrome-profile", id);
-  },
+ 
 
   loadAudio: async (path: string): Promise<string> => {
     return await ipcRenderer.invoke("load-audio", path);
@@ -50,39 +37,17 @@ export const backend = {
 
   deleteChromeProfile: async (pathProfile: string): Promise<boolean> =>
     await ipcRenderer.invoke("delete-chrome-profile", pathProfile),
-
-  seedingLiveStream: async (
-    liveId:string,
-    chromeProfileIds: string[],
-    comments: string,
-    delay: number,
-    linkLiveStream: string,
-    acceptDupplicateComment: boolean
-  ): Promise<void> =>
-    await ipcRenderer.invoke("seeding-livestream", {
-      liveId,
-      chromeProfileIds,
-      comments,
-      delay,
-      linkLiveStream,
-      acceptDupplicateComment,
-    }),
-
-
-    seedingLiveStreamAutoCommentAfter60s:async(
-      liveId:string,
-      chromeProfileIds: string[],
-      comments: string,
-      linkLiveStream: string,
-   
-    ):Promise<void>=> await ipcRenderer.invoke('seeding-livestream-batch',{
-      liveId,
-      chromeProfileIds,
-      comments,
-   
-      linkLiveStream,
- 
-    }),
+  // shareLiveStream: async (chromeIDS:string[],linkLive:string) => {
+  //   console.log("SEND PRELOAD",chromeIDS)
+  //   return await ipcRenderer.invoke("share-livestream",{chromeIDS,linkLive})
+  //   // return await ipcRenderer.invoke("close-chrome-profile", id);
+  // },
+  seedingTiktokLiveStreamShare : async (params:ShareParams)=>{
+    await ipcRenderer.invoke("seeding-share-livestream-tiktok",params)
+  },
+  seedingTiktokLiveStreamComments: async (params:CommentParams):Promise<void>=>{
+    await ipcRenderer.invoke("seeding-comments-livestream-tiktok",params)
+  },
   onLogUpdate: (callback: (log: string) => void): void => {
     ipcRenderer.on("update-log", (_event, log) => {
       callback(log);

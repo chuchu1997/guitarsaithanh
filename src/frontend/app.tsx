@@ -28,7 +28,7 @@ const root = createRoot(document.body);
 
 const App = () => {
   const chromeStore = useChromeStore();
-  const liveStreamStore = useLiveStreamStore();
+  // const liveStreamStore = useLiveStreamStore();
 
   useEffect(() => {
     backend.onListenCloseChromeByUser((driverIdClose: string) => {
@@ -38,7 +38,7 @@ const App = () => {
 
   useEffect(() => {
     chromeStore.resetStateChromeProfile();
-    liveStreamStore.reset();
+    // liveStreamStore.reset();
   }, []);
 
   return (

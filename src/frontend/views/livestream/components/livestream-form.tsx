@@ -151,27 +151,16 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       });
       // Gửi danh sách chrome profile để seeding livestream
       const profileIds = selected.map((select) => select.id);
-
-      if(data.autoComment60s){
-        await backend.seedingLiveStreamAutoCommentAfter60s(
-          liveTarget.id,
-          profileIds,
-          data.comments,
-   
-          data.link,
-  
-        )
-      }
-      else{
-        await backend.seedingLiveStream(
-          liveTarget.id,
-          profileIds,
-          data.comments,
-          data.delay,
-          data.link,
-          data.acceptDupplicateComment
-        );
-      }
+      await backend.seedingTiktokLiveStreamComments({
+        comments: data.comments,
+        chromeIDS: profileIds,
+        allowAutoCmtAfter60s:data.autoComment60s,
+        acceptDupplicateComment:data.acceptDupplicateComment,
+        delay:data.delay,
+        link:data.link
+      
+      })
+    
      
     } catch (error) {
       excuteStore.setLoading(false);
@@ -191,7 +180,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
         excuteStore.setMessageExcute(
           `Đang thực hiện share cho livestream (${liveTarget.name})`
         );
-        await backend.shareLiveStream(chromeIDS, liveLink);
+        await backend.seedingTiktokLiveStreamShare({chromeIDS:chromeIDS,link:liveLink});
         excuteStore.setLoading(false);
       }catch(err){
         toast.error("Chưa đăng nhập không thể share")
@@ -271,7 +260,9 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
             name="autoComment60s"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Auto Comment Sau 60s</FormLabel>
+                <FormLabel>
+                  <div className=  "text-yellow-700 italic font-bold">Auto Comment Sau 60s (Chỉ sử dụng cho các bạn livestream !!!)</div>
+                </FormLabel>
                 <FormControl>
                   <Checkbox
                     checked={field.value}

@@ -16,6 +16,6 @@
     "paths": {
       "@/*": ["src/frontend/*"]
     },
-    "typeRoots": ["node_modules/@types", "src/types"]
+    "typeRoots": ["node_modules/@types", "src/electron/types"]
   }
 }

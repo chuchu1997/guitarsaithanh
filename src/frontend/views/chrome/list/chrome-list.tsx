@@ -47,6 +47,26 @@ const ChromeListView = () => {
   function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  async function openChromeProfilesInBatches(
+    selected: ChromeColumn[],
+    isHeadless: boolean,
+    batchSize = 3
+  ) {
+    for (let i = 0; i < selected.length; i += batchSize) {
+      // Chia thành từng batch
+      const batch = selected.slice(i, i + batchSize);
+      const openPromises = batch.map((select) =>
+        chromeStore.openChromeProfile(select.id, selected.length, isHeadless)
+      );
+
+      // Đợi tất cả profile trong batch được mở
+      await Promise.all(openPromises);
+      console.log(`✅ Đã mở batch từ ${i + 1} đến ${i + batch.length}`);
+    }
+    console.log("🎉 Tất cả các profile đã được mở!");
+  }
+
   const handleOpenMultipleChromeProfile = async (isHeadless: boolean) => {
     try {
       // Bắt đầu quá trình mở profile
@@ -57,12 +77,7 @@ const ChromeListView = () => {
         }`
       );
 
-      // Mở đồng thời tất cả các profile đã chọn
-      const openPromises = selected.map((select) =>
-        chromeStore.openChromeProfile(select.id, selected.length, isHeadless)
-      );
-
-      await Promise.all(openPromises); // ⏱️ Đợi tất cả profile mở xong
+      await openChromeProfilesInBatches(selected, isHeadless, 3);
 
       toast.success("Đã mở tất cả profile!");
     } catch (error) {
