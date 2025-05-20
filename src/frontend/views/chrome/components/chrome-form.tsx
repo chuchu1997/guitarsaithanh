@@ -182,10 +182,8 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
                     {/* Hiển thị đường dẫn đã chọn */}
                     <Input
                       {...field}
-                      disabled
                       value={field.value}
                       placeholder="Đường dẫn profile ..."
-                      readOnly // Để không cho phép người dùng chỉnh sửa trực tiếp
                       className="mr-2"
                     />
                   </div>
