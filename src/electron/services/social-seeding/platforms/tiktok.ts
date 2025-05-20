@@ -300,6 +300,12 @@ export class TiktokSeeding extends SocialSeeding {
 
         return; // Exit the function early
       }
+      if (usedComments.size >= totalComments) {
+        sendLogToRenderer(
+          `✅ All ${totalComments} comments have been processed!`
+        );
+        return; // THAY VÌ break (vì bạn không muốn vòng ngoài chạy tiếp)
+      }
       const remainingComments = totalComments - commentIndex;
       const commentsToProcess = Math.min(remainingComments, totalProfiles);
       const profileBatches = this.chunkArray(
@@ -389,6 +395,7 @@ export class TiktokSeeding extends SocialSeeding {
             `⏱️ Đã xử lý 10 profile, đang đợi 60 giây trước khi tiếp tục...`
           );
           await this.sleep(60000);
+
           processedProfileCount = 0;
         }
         // Check if we've used all comments
