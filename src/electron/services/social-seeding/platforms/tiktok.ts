@@ -338,14 +338,26 @@ export class TiktokSeeding extends SocialSeeding {
         }
 
         for (const [index, profile] of shuffledBatch.entries()) {
-          await openChromeProfile({
+
+           await Promise.all(
+        shuffledBatch.map((profile) =>
+          openChromeProfile({
             id: profile.id,
             profilePath: profile.profilePath,
             proxy: profile.proxy,
             headless: profile.headless,
             link: params.link,
-          });
-          console.log("CO PROXY !!!", profile.proxy);
+          })
+        )
+      );
+
+          // await openChromeProfile({
+          //   id: profile.id,
+          //   profilePath: profile.profilePath,
+          //   proxy: profile.proxy,
+          //   headless: profile.headless,
+          //   link: params.link,
+          // });
           if (getStopSeeding()) {
             sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
             await closeBrowser(profile.id);
@@ -386,6 +398,8 @@ export class TiktokSeeding extends SocialSeeding {
               // Simulate processing time
               await this.sleep(params.delay * 1000);
             } catch (error) {
+
+              await closeBrowser(profile.id)
               sendLogToRenderer(`❌ Error with profile ${profile}: ${error}`);
             }
           }
@@ -418,50 +432,7 @@ export class TiktokSeeding extends SocialSeeding {
         }
       }
     }
-    // while (commentIndex < totalComments) {
-    //   for (let i = 0; i < batchSize; i++) {
-    //     if (commentIndex >= totalComments) break;
-    //     const batch = chromeIDS.slice(0, batchSize);
-    //     sendLogToRenderer(
-    //       `🔄 Đang xử lý batch ${batchNumber} với ${batch.length} profile`
-    //     );
-    //     for (const chromeID of batch) {
-    //       const comment = commentList[commentIndex];
 
-    //       if (!comment || commentIndex >= totalComments) break;
-    //       if (usedComments.has(comment)) {
-    //         sendLogToRenderer(`⚠️ Trùng comment, bỏ qua`);
-    //         continue;
-    //       }
-
-    //       sendLogToRenderer(`🔄 Chrome Profile Đang xử lý: ${chromeID}`);
-    //       await this.processProfile(chromeID, async (page, profileName) => {
-    //         await this.enterCommentAndSubmit(page, comment, profileName);
-    //         usedComments.add(comment);
-    //         sendLogToRenderer(`✅ Đã comment: ${comment}`);
-    //       });
-
-    //       // Tăng chỉ số comment sau khi xử lý xong
-    //       commentIndex++;
-    //       if (commentIndex >= totalComments) break;
-
-    //       // Delay giữa các comment
-    //       await this.sleep(delay * 1000);
-    //       sendLogToRenderer(
-    //         `⏱️ Thời gian delay ${delay} giây trước khi comment tiếp !!`
-    //       );
-    //     }
-
-    //     // Điều kiện delay sau batch (trừ batch cuối)
-    //     if (commentIndex < totalComments) {
-    //       sendLogToRenderer(
-    //         `⏱️ Đợi 60 giây trước khi xử lý batch tiếp theo...`
-    //       );
-    //       await this.sleep(60 * 1000);
-    //     }
-    //   }
-    //   sendLogToRenderer(`✅ Đã Auto Comment Seeding Thành Công !!! "`);
-    // }
   }
   sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
