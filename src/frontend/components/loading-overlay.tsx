@@ -10,10 +10,15 @@ import { Loader2 } from "lucide-react";
 import useExcuteStore from "@/hooks/use-excute";
 import meoGif from "../images/meo.gif";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import { Button } from "./ui/button";
 
 export const LoadingOverlay = () => {
   const isLoading = useExcuteStore((state) => state.isLoading);
   const message = useExcuteStore((state) => state.messageExcute);
+  const onShowButtonStopSeeding = useExcuteStore(
+    (state) => state.stopSeedingBtn
+  );
+
   console.log("Loading state:", isLoading); // Thêm log để kiểm tra
 
   return (
@@ -35,6 +40,14 @@ export const LoadingOverlay = () => {
               {message}
               <br /> vui lòng đợi giây lát...
             </div>
+            <Button
+              className="mt-4 font-bold italic"
+              variant={"destructive"}
+              onClick={async () => {
+                await backend.stopSeeding();
+              }}>
+              Dừng Seeding
+            </Button>
           </div>
         </DialogContent>
       </DialogPortal>

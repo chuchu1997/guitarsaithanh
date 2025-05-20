@@ -8,7 +8,11 @@ import os from "os";
 
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer-core";
 import { createSeedingService } from "./services/social-seeding";
-import { ProfileParams, SeedingCommentParams } from "src/electron/types";
+import {
+  BaseSeeding,
+  ProfileParams,
+  SeedingCommentParams,
+} from "src/electron/types";
 import {
   closeBrowser,
   createChromeProfile,
@@ -16,8 +20,8 @@ import {
   getAllBrowserProfiles,
   openChromeProfile,
 } from "./services/browser.service";
-import { CommentParams, ShareParams } from "./services/social-seeding/base";
 import { sendLogToRenderer } from "./utils/log.utils";
+import { setStopSeeding } from "./services/social-seeding/stop-signal";
 
 // IPC handlers
 ipcMain.handle("open-chrome-profile", async (_e, params: ProfileParams) => {
@@ -28,9 +32,14 @@ ipcMain.handle("open-chrome-profile", async (_e, params: ProfileParams) => {
   }
 });
 
+ipcMain.handle("stop-seeding", () => {
+  setStopSeeding(true);
+  sendLogToRenderer("⛔ Đã yêu cầu dừng quá trình seeding.");
+});
+
 ipcMain.handle(
   "seeding-share-livestream-tiktok",
-  async (_event: IpcMainInvokeEvent, params: ShareParams) => {
+  async (_event: IpcMainInvokeEvent, params: BaseSeeding) => {
     try {
       const TiktokSeeding = createSeedingService("tiktok");
       await TiktokSeeding.shareContent(params);
@@ -44,7 +53,7 @@ ipcMain.handle(
 
 ipcMain.handle(
   "seeding-comments-livestream-tiktok",
-  async (_event: IpcMainInvokeEvent, params: CommentParams) => {
+  async (_event: IpcMainInvokeEvent, params: SeedingCommentParams) => {
     try {
       const TiktokSeeding = createSeedingService("tiktok");
       await TiktokSeeding.commentOnContent(params);

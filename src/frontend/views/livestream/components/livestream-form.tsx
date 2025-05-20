@@ -24,6 +24,7 @@ import toast from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import LogStatusComponent from "@/components/log-status";
 import useExcuteStore from "@/hooks/use-excute";
+import { ProfileParams } from "src/electron/types";
 interface LiveStreamPageProps {
   id: string;
 }
@@ -69,9 +70,11 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
   //   const chromeProfileAvailable = chromeStore.items.filter(
   //     (item) => item.injectLiveStream === "" || item.injectLiveStream === null
   //   );
-  const chromeProfileAvailable = chromeStore.items.filter(
-    (item) => item.isOpen
-  );
+  // const chromeProfileAvailable = chromeStore.items.filter(
+  //   (item) => item.isOpen
+  // );
+  const chromeProfileAvailable = chromeStore.items;
+
   useEffect(() => {
     const temp: LiveStreamColumn[] = chromeProfileAvailable.map((item) => ({
       id: item.id,
@@ -150,10 +153,18 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
         acceptDupplicateComment: data.acceptDupplicateComment,
       });
       // Gửi danh sách chrome profile để seeding livestream
-      const profileIds = selected.map((select) => select.id);
+      // const profileIds = selected.map((select) => select) as ProfileParams;
+      const chromeProfiles:ProfileParams[] = selected.map((select)=>({
+        id:select.id,
+        profilePath:select.pathProfile,
+        proxy:select.proxy,
+        headless:false
+        
+      }))
+
       await backend.seedingTiktokLiveStreamComments({
         comments: data.comments,
-        chromeIDS: profileIds,
+        chromeProfiles: chromeProfiles,
         allowAutoCmtAfter60s:data.autoComment60s,
         acceptDupplicateComment:data.acceptDupplicateComment,
         delay:data.delay,
@@ -170,17 +181,27 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
   };
 
   const onShareLiveStream = async () => {
-    const chromeIDS = selected.map((select) => select.id);
+
+
+    const chromeProfiles:ProfileParams[] = selected.map((select)=>({
+      id:select.id,
+      profilePath:select.pathProfile,
+      proxy:select.proxy,
+      headless:false
+      
+    }))
+    
+
 
     const liveLink = form.getValues("link");
-    if (chromeIDS.length > 0 && liveLink != "") {
+    if (chromeProfiles.length > 0 && liveLink != "") {
     
       try{
         excuteStore.setLoading(true);
         excuteStore.setMessageExcute(
           `Đang thực hiện share cho livestream (${liveTarget.name})`
         );
-        await backend.seedingTiktokLiveStreamShare({chromeIDS:chromeIDS,link:liveLink});
+        await backend.seedingTiktokLiveStreamShare({chromeProfiles:chromeProfiles,link:liveLink});
         excuteStore.setLoading(false);
       }catch(err){
         toast.error("Chưa đăng nhập không thể share")
@@ -191,7 +212,8 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
 
   };
   return (
-    <div className=" mx-auto p-6 bg-white rounded-lg shadow space-y-6">
+    <div className = "h-screen max-h-[800px] overflow-y-scroll">
+       <div className=" mx-auto p-6 bg-white rounded-lg shadow space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-2">
         Seeding Livestream ({liveTarget.name})
       </h2>
@@ -325,6 +347,8 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       </Form>
       <LogStatusComponent />
     </div>
+    </div>
+   
   );
 };
 

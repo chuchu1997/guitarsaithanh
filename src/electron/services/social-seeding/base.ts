@@ -8,6 +8,7 @@ import {
   detectCaptcha,
   getBrowserProfile,
 } from "../browser.service";
+import { SeedingCommentParams, ShareParams } from "src/electron/types";
 
 /// SETTING CHỜ MỞ CŨNG NHƯ THAO TÁC CHO PUPPER VỚI PAGE !!!
 export const COMMON_CONSTANTS = {
@@ -16,19 +17,7 @@ export const COMMON_CONSTANTS = {
   NAVIGATION_TIMEOUT_MS: 30000,
 };
 
-export interface BaseParams {
-  chromeIDS: string[];
-  link?: string;
-}
-
-export type ShareParams = BaseParams;
-
-export interface CommentParams extends BaseParams {
-  comments: string;
-  delay?: number;
-  acceptDupplicateComment?: boolean;
-  allowAutoCmtAfter60s?: boolean;
-}
+// export type ShareParams = BaseParams;
 
 export abstract class SocialSeeding {
   /**
@@ -93,11 +82,14 @@ export abstract class SocialSeeding {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+
+      await closeBrowser(chromeId);
       sendLogToRenderer(`❌ Lỗi ở Profile  ${profileName}: ${errorMessage}`);
       return null;
     }
   }
 
   abstract shareContent(params: ShareParams): Promise<void>;
-  abstract commentOnContent(params: CommentParams): Promise<void>;
+
+  abstract commentOnContent(params: SeedingCommentParams): Promise<void>;
 }

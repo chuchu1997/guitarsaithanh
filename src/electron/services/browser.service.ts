@@ -53,9 +53,10 @@ export async function detectCaptcha(page: Page): Promise<boolean> {
 export async function openChromeProfile({
   id,
   profilePath,
-  proxyPath,
-  totalProfile = 1,
+  proxy,
+  // totalProfile = 1,
   headless = false,
+  link = "https://tiktok.com",
 }: ProfileParams): Promise<string> {
   const profileName = path.basename(profilePath);
   try {
@@ -65,16 +66,16 @@ export async function openChromeProfile({
     // Calculate window position and size
     const screenWidth = 1920;
     const screenHeight = 1080;
-    const cols = Math.ceil(Math.sqrt(totalProfile));
-    const rows = Math.ceil(totalProfile / cols);
-    const width = Math.floor(screenWidth / cols);
-    const height = Math.floor(screenHeight / rows);
+    // const cols = Math.ceil(Math.sqrt(totalProfile));
+    // const rows = Math.ceil(totalProfile / cols);
+    // const width = Math.floor(screenWidth / cols);
+    // const height = Math.floor(screenHeight / rows);
 
-    const index = Object.keys(browsers).length;
-    const row = Math.floor(index / cols);
-    const col = index % cols;
-    const x = col * width;
-    const y = row * height;
+    // const index = Object.keys(browsers).length;
+    // const row = Math.floor(index / cols);
+    // const col = index % cols;
+    // const x = col * width;
+    // const y = row * height;
 
     // Setup user agent
     const userAgentPath = path.join(profilePath, "ua.txt");
@@ -94,9 +95,10 @@ export async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
-      `--window-position=${x},${y}`,
       "--window-size=1280,800",
     ];
+    // `--window-position=${x},${y}`,
+
     //CHẠY Ở CHẾ ĐỘ KHÔNG GIAO DIỆN
     // if (!headless) {
     //   args.push(`--window-size=${width},${height}`);
@@ -109,8 +111,8 @@ export async function openChromeProfile({
       args.push(`--disable-gpu`);
       args.push(`--no-sandbox`);
     }
-    if (proxyPath) {
-      const proxyParts = proxyPath.split(":");
+    if (proxy) {
+      const proxyParts = proxy.split(":");
       args.push(`--proxy-server=http://${proxyParts[0]}:${proxyParts[1]}`);
     }
 
@@ -134,6 +136,8 @@ export async function openChromeProfile({
         deviceScaleFactor: 1,
       },
     });
+    //GÁN TẠM ĐỂ NẾU CÓ LỖI THÌ XỬ LÝ LIỀN
+    browsers[id] = { browser, page: null as any, profilePath }; // Gán tạm
 
     // Handle browser disconnection
     browser.on("disconnected", async () => {
@@ -147,8 +151,8 @@ export async function openChromeProfile({
     await page.setUserAgent(userAgent);
 
     // Authenticate with proxy if credentials provided
-    if (proxyPath) {
-      const [ip, port, username, password] = proxyPath.split(":");
+    if (proxy) {
+      const [ip, port, username, password] = proxy.split(":");
       try {
         await page.authenticate({ username, password });
       } catch (err) {
@@ -161,7 +165,7 @@ export async function openChromeProfile({
 
     // Navigate to TikTok
 
-    await page.goto("https://tiktok.com", { timeout: DEFAULT_TIMEOUT });
+    await page.goto(link, { timeout: DEFAULT_TIMEOUT });
 
     // Check for CAPTCHA
     if (await detectCaptcha(page)) {
@@ -178,13 +182,14 @@ export async function openChromeProfile({
     });
 
     // Save browser profile in memory
-    browsers[id] = { browser, page, profilePath };
+    browsers[id].page = page;
 
     sendLogToRenderer(`✅ Đã mở profile : ${profileName}`);
     sendLogToRenderer(`--------------------------------`);
 
     return id;
   } catch (err) {
+    await closeBrowser(id);
     sendLogToRenderer(
       `❌ Lỗi mở profile ${profileName} với ID: ${id} : ${
         (err as Error).message

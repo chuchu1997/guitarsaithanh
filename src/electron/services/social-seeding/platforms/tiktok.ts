@@ -3,13 +3,15 @@
 import { Page, ElementHandle } from "puppeteer-core";
 import { sendLogToRenderer } from "../../../utils/log.utils";
 import { shuffleArray } from "../../../utils/system.utils";
+import { SocialSeeding, COMMON_CONSTANTS } from "../base";
+import { closeBrowser, openChromeProfile } from "../../browser.service";
 import {
-  SocialSeeding,
-  ShareParams,
-  CommentParams,
-  COMMON_CONSTANTS,
-} from "../base";
-import { closeBrowser } from "../../browser.service";
+  BaseSeeding,
+  SeedingCommentParams,
+  SeedingCommentsExcuteBase,
+  SeedingCommentsRegular,
+} from "src/electron/types";
+import { getStopSeeding, setStopSeeding } from "../stop-signal";
 
 const TIKTOK_CONSTANTS = {
   //TEXT MẶC ĐỊNH LIVESTREAM
@@ -27,6 +29,10 @@ const TIKTOK_CONSTANTS = {
 };
 
 export class TiktokSeeding extends SocialSeeding {
+  constructor() {
+    super();
+    setStopSeeding(false);
+  }
   /**
    * Enter text into TikTok's comment box and submit
    */
@@ -90,7 +96,6 @@ export class TiktokSeeding extends SocialSeeding {
       await el.type(text, { delay: 30 });
       sendLogToRenderer(`⌨️ Entered comment: "${text}"`);
 
-      //Find and click post button
       await page.waitForSelector(TIKTOK_CONSTANTS.POST_BUTTON_SVG_PATH, {
         visible: true,
         timeout: timeoutMS,
@@ -112,146 +117,335 @@ export class TiktokSeeding extends SocialSeeding {
     }
   }
 
-  async shareContent({ chromeIDS, link }: ShareParams): Promise<void> {
-    const profileIds = chromeIDS;
-    const targetLink = link;
-    if (!targetLink) {
-      sendLogToRenderer("❌ Không có đường dẫn để share");
-      return;
-    }
-    sendLogToRenderer(`🧮 Tổng số lượng Profile (Share): ${profileIds.length}`);
+  async shareContent(params: BaseSeeding): Promise<void> {
+    const batchSize = 3;
+    // MỖI LẦN XỬ LÝ 3 PROFILE THÔI !!!
+    const batches = this.chunkArray(params.chromeProfiles, batchSize);
 
-    //GIỐNG NHƯ TẠO THREAD Ở ĐÂY MAX_CONCURENCY LÀ 3 . VÍ DỤ CÓ 6 PROFILE NÓ sẽ chia ra làm 2 batch để xử lý , mỗi batch chạy 3 profiles
-    const batches = this.createBatches(
-      profileIds,
-      COMMON_CONSTANTS.MAX_CONCURRENCY
-    );
     for (const batch of batches) {
+      if (getStopSeeding()) {
+        sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
+        return; // Exit the function early
+      }
       await Promise.all(
-        batch.map(async (chromeID) => {
-          await this.processProfile(chromeID, async (page, profileName) => {
-            sendLogToRenderer(`👤 Bắt đầu share ở profile :${profileName}`);
-            //NẾU PAGE Ở VỊ TRÍ HIỆN TẠI URL KHÁC VỚI URL NGƯỜI DÙNG CHỈ ĐỊNH THÌ NAVIGATE
-            await this.navigateIfNeeded(page, targetLink);
+        batch.map((profile) =>
+          openChromeProfile({
+            id: profile.id,
+            profilePath: profile.profilePath,
+            proxy: profile.proxy,
+            headless: profile.headless,
+            link: params.link,
+          })
+        )
+      );
+      for (const profile of batch) {
+        if (getStopSeeding()) {
+          sendLogToRenderer(`🛑 Đang đóng trình duyệt và dừng quá trình!`);
+          await closeBrowser(profile.id);
+          continue;
+        }
+        try {
+          await this.processProfile(profile.id, async (page, profileName) => {
+            //
+            if (params.link) {
+              await this.navigateIfNeeded(page, params.link);
+            }
             await this.excuteShare(page);
             sendLogToRenderer(
               `✅ Share Profile Thành Công !!!: "${profileName}"`
             );
+            await closeBrowser(profile.id);
           });
-        })
-      );
+        } catch (err) {
+          sendLogToRenderer(
+            `🎯 Profile này dính capcha hoặc chưa đăng nhập không share được !!!`
+          );
+          await closeBrowser(profile.id);
+        }
+      }
     }
   }
 
-  async handleRegularComments(
-    commentList: string[],
-    chromeIDS: string[],
-    acceptDupplicate: boolean,
-    delay: number
-  ): Promise<void> {
+  chunkArray<T>(array: T[], size: number): T[][] {
+    const result: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      result.push(array.slice(i, i + size));
+    }
+    return result;
+  }
+  async handleRegularComments({
+    ...data
+  }: SeedingCommentsRegular): Promise<void> {
     const usedComments = new Set<string>();
     sendLogToRenderer(
       `🎯 Chế độ comment: ${
-        acceptDupplicate ? "✅ Cho phép trùng" : "🚫 Không trùng"
+        data.acceptDupplicateComment ? "✅ Cho phép trùng" : "🚫 Không trùng"
       }`
     );
-    for (const chromeID of chromeIDS) {
-      let comment: string | undefined;
-      const maxTries = 5;
 
-      // Tìm comment không trùng (nếu cần)
-      for (let tries = 0; tries < maxTries; tries++) {
-        comment = commentList[Math.floor(Math.random() * commentList.length)];
-        // Nếu cho phép trùng hoặc comment chưa sử dụng thì dừng tìm
-        if (acceptDupplicate || !usedComments.has(comment)) break;
-        // Nếu đến lần thử cuối cùng, cho phép trùng để không bị dừng
-        if (tries === maxTries - 1) break;
+    const batchSize = 3;
+    // MỖI LẦN XỬ LÝ 3 PROFILE THÔI !!!
+    const batches = this.chunkArray(data.chromeProfiles, batchSize);
+    for (const batch of batches) {
+      if (getStopSeeding()) {
+        sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
+        return; // Exit the function early
       }
-
-      // Nếu không tìm được comment hợp lệ
-      if (!comment || (!acceptDupplicate && usedComments.has(comment))) {
-        sendLogToRenderer(`⚠️ Trùng comment, bỏ qua`);
-        continue;
+      if (
+        !data.acceptDupplicateComment &&
+        usedComments.size >= data.comments.length
+      ) {
+        sendLogToRenderer(
+          `✅ Đã sử dụng hết comment hợp lệ, dừng xử lý các profile còn lại.`
+        );
+        break;
       }
+      const shuffledBatch = shuffleArray(batch);
 
-      // Xử lý profile với comment
-      await this.processProfile(chromeID, async (page, profileName) => {
-        await this.enterCommentAndSubmit(page, comment, profileName);
-        usedComments.add(comment);
-      });
-      sendLogToRenderer(
-        `⏱️ Thời gian delay ${delay} giây trước khi comment tiếp !!`
+      //XÁO TRỘN 3 PROFILE VỊ TRÍ RANDOM !!!
+      await Promise.all(
+        batch.map((profile) =>
+          openChromeProfile({
+            id: profile.id,
+            profilePath: profile.profilePath,
+            proxy: profile.proxy,
+            headless: profile.headless,
+            link: data.link,
+          })
+        )
       );
-      // Đợi trước khi tiếp tục profile tiếp theo
-      await this.sleep(delay * 1000);
+
+      for (const [index, profile] of shuffledBatch.entries()) {
+        if (getStopSeeding()) {
+          sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
+          await closeBrowser(profile.id);
+          return; // Exit the function early
+        }
+        let comment: string | undefined;
+        const maxTries = 5;
+        for (let tries = 0; tries < maxTries; tries++) {
+          comment =
+            data.comments[Math.floor(Math.random() * data.comments.length)];
+          // Nếu cho phép trùng hoặc comment chưa sử dụng thì dừng tìm
+          if (data.acceptDupplicateComment || !usedComments.has(comment)) break;
+          // Nếu đến lần thử cuối cùng, cho phép trùng để không bị dừng
+          if (tries === maxTries - 1) break;
+        }
+
+        // Nếu không tìm được comment hợp lệ
+        if (
+          !comment ||
+          (!data.acceptDupplicateComment && usedComments.has(comment))
+        ) {
+          sendLogToRenderer(`⚠️ Trùng comment, bỏ qua`);
+          await closeBrowser(profile.id);
+          continue;
+        }
+        await this.processProfile(profile.id, async (page, profileName) => {
+          // NẾU CHƯA ĐI ĐẾN ĐƯỜNG DẪN THÌ ĐI ĐẾN
+          if (data.link) {
+            await this.navigateIfNeeded(page, data.link);
+          }
+          await this.enterCommentAndSubmit(page, comment, profileName);
+          usedComments.add(comment);
+          await closeBrowser(profile.id);
+          const isLastProfile = index === shuffledBatch.length - 1;
+          const isLastBatch = batches.at(-1)?.includes(profile);
+
+          if (!(isLastBatch && isLastProfile)) {
+            sendLogToRenderer(
+              `⏱️ Thời gian delay ${data.delay} giây trước khi comment tiếp !!`
+            );
+            await this.sleep(data.delay * 1000);
+          } else {
+            sendLogToRenderer(`✅ Đã xử lý profile cuối cùng, không delay.`);
+          }
+        });
+      }
     }
   }
 
   async handleAutomaticComments(
-    commentList: string[],
-    chromeIDS: string[],
-    delay: number
+    // commentList: string[],
+    // chromeIDS: string[],
+    // delay: number
+    { ...params }: SeedingCommentsRegular
   ): Promise<void> {
+    setStopSeeding(false);
+
     //
-    sendLogToRenderer(
-      `🎯 Tự động comments (60s) cho đến khi nào hết comments !!`
-    );
+    sendLogToRenderer(`🎯 Tự động comments  cho đến khi nào hết comments !!`);
+    // Track which comments have been used to avoid duplicates
     const usedComments = new Set<string>();
-    const batchSize = 10;
+
+    // Batch size for parallel execution
+    const batchSize = 3;
+    // Process comments until all are used
+
     let commentIndex = 0;
-    const totalComments = commentList.length;
-    const batchNumber = Math.floor(commentIndex / batchSize) + 1;
-    sendLogToRenderer(`🎯 batch Size ${batchSize}!!`);
-    sendLogToRenderer(`🎯 batch Number ${batchNumber}!!`);
-    sendLogToRenderer(`🎯 Chrome Profile Length ${chromeIDS.length}!!`);
 
+    const totalProfiles = params.chromeProfiles.length;
+
+    // Log initial information
+    const totalComments = params.comments.length;
+    let processedProfileCount = 0; // biến đếm profile đã xử lý
+
+    sendLogToRenderer(`🎯 Total comments: ${totalComments}`);
+    sendLogToRenderer(`🎯 Batch size: ${batchSize}`);
+
+    // const batches = this.chunkArray(params.chromeProfiles, batchSize);
     while (commentIndex < totalComments) {
-      for (let i = 0; i < batchSize; i++) {
-        if (commentIndex >= totalComments) break;
-        const batch = chromeIDS.slice(0, batchSize);
-        sendLogToRenderer(
-          `🔄 Đang xử lý batch ${batchNumber} với ${batch.length} profile`
-        );
-        for (const chromeID of batch) {
-          const comment = commentList[commentIndex];
+      if (getStopSeeding()) {
+        sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
 
-          if (!comment || commentIndex >= totalComments) break;
-          if (usedComments.has(comment)) {
-            sendLogToRenderer(`⚠️ Trùng comment, bỏ qua`);
-            continue;
+        return; // Exit the function early
+      }
+      const remainingComments = totalComments - commentIndex;
+      const commentsToProcess = Math.min(remainingComments, totalProfiles);
+      const profileBatches = this.chunkArray(
+        // Loop through profiles if needed by using modulo
+        Array.from(
+          { length: commentsToProcess },
+          (_, i) => params.chromeProfiles[i % totalProfiles]
+        ),
+        batchSize
+      );
+      for (let batchNum = 0; batchNum < profileBatches.length; batchNum++) {
+        const currentBatch = profileBatches[batchNum];
+        const shuffledBatch = shuffleArray(currentBatch);
+        if (getStopSeeding()) {
+          sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
+
+          return; // Exit the function early
+        }
+
+        await Promise.all(
+          shuffledBatch.map((profile) =>
+            openChromeProfile({
+              id: profile.id,
+              profilePath: profile.profilePath,
+              proxy: profile.proxy,
+              headless: profile.headless,
+              link: params.link,
+            })
+          )
+        );
+        for (const [index, profile] of shuffledBatch.entries()) {
+          if (getStopSeeding()) {
+            sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
+            await closeBrowser(profile.id);
+            return; // Exit the function early
           }
 
-          sendLogToRenderer(`🔄 Chrome Profile Đang xử lý: ${chromeID}`);
-          await this.processProfile(chromeID, async (page, profileName) => {
-            await this.enterCommentAndSubmit(page, comment, profileName);
-            usedComments.add(comment);
-            sendLogToRenderer(`✅ Đã comment: ${comment}`);
-          });
+          let comment: string | undefined;
+          for (let i = 0; i < params.comments.length; i++) {
+            if (!usedComments.has(params.comments[i])) {
+              comment = params.comments[i];
+              usedComments.add(comment);
+              break;
+            }
+          }
+          if (comment) {
+            sendLogToRenderer(
+              `🎯 Profile ${profile} commenting: ${comment.substring(0, 30)}...`
+            );
+            commentIndex++;
+            try {
+              await this.processProfile(
+                profile.id,
+                async (page, profileName) => {
+                  // NẾU CHƯA ĐI ĐẾN ĐƯỜNG DẪN THÌ ĐI ĐẾN
+                  if (params.link) {
+                    await this.navigateIfNeeded(page, params.link);
+                  }
+                  await this.enterCommentAndSubmit(page, comment, profileName);
+                  usedComments.add(comment);
+                  await closeBrowser(profile.id);
+                }
+              );
 
-          // Tăng chỉ số comment sau khi xử lý xong
-          commentIndex++;
-          if (commentIndex >= totalComments) break;
+              // Here you would implement the actual commenting logic
+              // For example:
+              // await this.processComment(profile, comment);
 
-          // Delay giữa các comment
-          await this.sleep(delay * 1000);
-          sendLogToRenderer(
-            `⏱️ Thời gian delay ${delay} giây trước khi comment tiếp !!`
-          );
+              // Simulate processing time
+              await this.sleep(params.delay * 1000);
+            } catch (error) {
+              sendLogToRenderer(`❌ Error with profile ${profile}: ${error}`);
+            }
+          }
+          processedProfileCount++;
+
+          // Optional delay between batches if needed
+          // if (batchNum < profileBatches.length - 1) {
+          //   await this.sleep( 60000);
+          //   sendLogToRenderer(`🎯 Tự động comments  cho đến khi nào hết comments !!`);
+
+          // }
         }
 
-        // Điều kiện delay sau batch (trừ batch cuối)
-        if (commentIndex < totalComments) {
+        if (processedProfileCount >= 10) {
           sendLogToRenderer(
-            `⏱️ Đợi 60 giây trước khi xử lý batch tiếp theo...`
+            `⏱️ Đã xử lý 10 profile, đang đợi 60 giây trước khi tiếp tục...`
           );
-          await this.sleep(60 * 1000);
+          await this.sleep(60000);
+          processedProfileCount = 0;
+        }
+        // Check if we've used all comments
+        if (usedComments.size >= params.comments.length) {
+          sendLogToRenderer(
+            `✅ All ${totalComments} comments have been processed!`
+          );
+          break;
+
+          //
         }
       }
-      sendLogToRenderer(`✅ Đã Auto Comment Seeding Thành Công !!! "`);
     }
+    // while (commentIndex < totalComments) {
+    //   for (let i = 0; i < batchSize; i++) {
+    //     if (commentIndex >= totalComments) break;
+    //     const batch = chromeIDS.slice(0, batchSize);
+    //     sendLogToRenderer(
+    //       `🔄 Đang xử lý batch ${batchNumber} với ${batch.length} profile`
+    //     );
+    //     for (const chromeID of batch) {
+    //       const comment = commentList[commentIndex];
+
+    //       if (!comment || commentIndex >= totalComments) break;
+    //       if (usedComments.has(comment)) {
+    //         sendLogToRenderer(`⚠️ Trùng comment, bỏ qua`);
+    //         continue;
+    //       }
+
+    //       sendLogToRenderer(`🔄 Chrome Profile Đang xử lý: ${chromeID}`);
+    //       await this.processProfile(chromeID, async (page, profileName) => {
+    //         await this.enterCommentAndSubmit(page, comment, profileName);
+    //         usedComments.add(comment);
+    //         sendLogToRenderer(`✅ Đã comment: ${comment}`);
+    //       });
+
+    //       // Tăng chỉ số comment sau khi xử lý xong
+    //       commentIndex++;
+    //       if (commentIndex >= totalComments) break;
+
+    //       // Delay giữa các comment
+    //       await this.sleep(delay * 1000);
     //       sendLogToRenderer(
-    //         `⏱️ Đợi 60 giây trước khi xử lý batch tiếp theo.`
+    //         `⏱️ Thời gian delay ${delay} giây trước khi comment tiếp !!`
     //       );
+    //     }
+
+    //     // Điều kiện delay sau batch (trừ batch cuối)
+    //     if (commentIndex < totalComments) {
+    //       sendLogToRenderer(
+    //         `⏱️ Đợi 60 giây trước khi xử lý batch tiếp theo...`
+    //       );
+    //       await this.sleep(60 * 1000);
+    //     }
+    //   }
+    //   sendLogToRenderer(`✅ Đã Auto Comment Seeding Thành Công !!! "`);
+    // }
   }
   sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -260,52 +454,35 @@ export class TiktokSeeding extends SocialSeeding {
   async commentOnContent({
     delay = 2000,
     ...data
-  }: CommentParams): Promise<void> {
+  }: SeedingCommentParams): Promise<void> {
     try {
       const commentList = data.comments
         .split(/[,\n]/)
         .map((c) => c.trim())
         .filter(Boolean);
-      if (data.chromeIDS.length === 0) {
-        sendLogToRenderer(
-          "⚠️ Vui lòng cung cấp Danh sách  Chrome Profile để seeding comments !!"
-        );
-        return;
-      }
-      sendLogToRenderer(
-        `📝 Bắt đầu comment seeding với ${data.chromeIDS.length} profiles và ${commentList.length} comments`
-      );
-      sendLogToRenderer(`📝 Thời gian delay cho mỗi profile là ${delay}`);
-
-      const navigateLinkSeeding = data.chromeIDS.map((chromeID) =>
-        this.processProfile(chromeID, async (page) => {
-          if (data.link) {
-            await this.navigateIfNeeded(page, data.link);
-          }
-        })
-      );
-      await Promise.all(navigateLinkSeeding);
-      // XÁO TRỘN CHROME ID CHO COMMENT RANDOM !!!
-      const chromeWithShuffle = shuffleArray(data.chromeIDS);
-      if (data.allowAutoCmtAfter60s) {
-        await this.handleAutomaticComments(
-          commentList,
-          chromeWithShuffle,
-          delay
-        );
+      if (!data.allowAutoCmtAfter60s) {
+        await this.handleRegularComments({
+          chromeProfiles: data.chromeProfiles,
+          comments: commentList,
+          link: data.link,
+          delay: delay,
+          acceptDupplicateComment: data.acceptDupplicateComment,
+        });
+        //
       } else {
-        await this.handleRegularComments(
-          commentList,
-          chromeWithShuffle,
-          data.acceptDupplicateComment,
-          delay
-        );
+        await this.handleAutomaticComments({
+          chromeProfiles: data.chromeProfiles,
+          comments: commentList,
+          link: data.link,
+          delay: delay,
+          acceptDupplicateComment: data.acceptDupplicateComment,
+        });
+        //
       }
     } catch (err) {
       sendLogToRenderer(
         `⚠️ Có lỗi xảy ra trong quá trình seeding comments ${err.message}`
       );
-
       throw new Error("Method not implemented.");
     }
   }

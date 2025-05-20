@@ -2,8 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from "electron";
 import { WebDriver } from "selenium-webdriver";
-import { ProfileParams } from "./types";
-import { CommentParams, ShareParams } from "./services/social-seeding/base";
+import { BaseSeeding, ProfileParams, SeedingCommentParams } from "./types";
 
 export const backend = {
   nodeVersion: async (msg: string): Promise<string> =>
@@ -42,18 +41,24 @@ export const backend = {
   //   return await ipcRenderer.invoke("share-livestream",{chromeIDS,linkLive})
   //   // return await ipcRenderer.invoke("close-chrome-profile", id);
   // },
-  seedingTiktokLiveStreamShare : async (params:ShareParams)=>{
+  seedingTiktokLiveStreamShare : async (params:BaseSeeding)=>{
     await ipcRenderer.invoke("seeding-share-livestream-tiktok",params)
   },
-  seedingTiktokLiveStreamComments: async (params:CommentParams):Promise<void>=>{
+  seedingTiktokLiveStreamComments: async (params:SeedingCommentParams):Promise<void>=>{
     await ipcRenderer.invoke("seeding-comments-livestream-tiktok",params)
   },
+  stopSeeding: async (): Promise<void> => {
+    await ipcRenderer.invoke("stop-seeding");
+  },
+  
   onLogUpdate: (callback: (log: string) => void): void => {
     ipcRenderer.on("update-log", (_event, log) => {
       callback(log);
     });
   },
  
+
+
 
   onListenCloseChromeByUser: (
     callback: (driverIdClose: string) => void
@@ -62,7 +67,7 @@ export const backend = {
       callback(driverIdClose);
     });
   },
- 
+  
 };
 
 contextBridge.exposeInMainWorld("backend", backend);

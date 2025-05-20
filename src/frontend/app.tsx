@@ -43,7 +43,7 @@ const App = () => {
 
   return (
     <HashRouter>
-      <div className="flex h-screen w-screen overflow-hidden">
+      <div className="flex h-screen w-screen overflow-x-hidden  ">
         <Toaster />
         <LoadingOverlay />
 

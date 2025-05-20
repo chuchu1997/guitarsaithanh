@@ -8,11 +8,13 @@ export interface ExcuteStore {
   messageExcute: string;
   setLoading: (value: boolean) => void;
   setMessageExcute: (value: string) => void;
+  stopSeedingBtn?: boolean;
 }
 
 const useExcuteStore = create<ExcuteStore>((set) => ({
   messageExcute: "",
   isLoading: false,
+  stopSeedingBtn: true,
   setMessageExcute: (value) => {
     set({ messageExcute: value });
   },
