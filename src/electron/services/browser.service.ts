@@ -56,16 +56,17 @@ export async function openChromeProfile({
   proxy,
   // totalProfile = 1,
   headless = false,
-  link = "https://tiktok.com",
+  link = "https://www.whatismyip.com",
 }: ProfileParams): Promise<string> {
   const profileName = path.basename(profilePath);
   try {
+    console.log("PROXCY",proxy);
     // Clean lock files that might prevent browser from opening
     cleanLockFiles(profilePath);
 
     // Calculate window position and size
-    const screenWidth = 1920;
-    const screenHeight = 1080;
+    // const screenWidth = 1920;
+    // const screenHeight = 1080;
     // const cols = Math.ceil(Math.sqrt(totalProfile));
     // const rows = Math.ceil(totalProfile / cols);
     // const width = Math.floor(screenWidth / cols);
@@ -87,7 +88,7 @@ export async function openChromeProfile({
       fs.writeFileSync(userAgentPath, userAgent);
     }
 
-    sendLogToRenderer(`✅ Profile Path ${profilePath}.`);
+    sendLogToRenderer(`✅ Profile Path ${profilePath}`);
 
     // Setup browser arguments
     const args = [
@@ -95,8 +96,9 @@ export async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
-      "--window-size=1280,800",
+      // `--window-position=${x},${y}`,
     ];
+
     // `--window-position=${x},${y}`,
 
     //CHẠY Ở CHẾ ĐỘ KHÔNG GIAO DIỆN
@@ -106,15 +108,16 @@ export async function openChromeProfile({
     //   args.push("--window-size=1280,800");
     // }
 
-    // Setup proxy if needed
-    if (headless) {
-      args.push(`--disable-gpu`);
-      args.push(`--no-sandbox`);
-    }
-    if (proxy) {
+
+    // if (headless) {
+    //   args.push(`--disable-gpu`);
+    //   args.push(`--no-sandbox`);
+    // }
+      if (proxy) {
       const proxyParts = proxy.split(":");
       args.push(`--proxy-server=http://${proxyParts[0]}:${proxyParts[1]}`);
     }
+
 
     sendLogToRenderer(`🖥️ Headless: ${headless ? "Có" : "Không"}`);
 
@@ -136,8 +139,9 @@ export async function openChromeProfile({
         deviceScaleFactor: 1,
       },
     });
+
     //GÁN TẠM ĐỂ NẾU CÓ LỖI THÌ XỬ LÝ LIỀN
-    browsers[id] = { browser, page: null as any, profilePath }; // Gán tạm
+    // browsers[id] = { browser, page: null, profilePath };
 
     // Handle browser disconnection
     browser.on("disconnected", async () => {
@@ -147,15 +151,21 @@ export async function openChromeProfile({
 
     // Get or create page
     const pages = await browser.pages();
+       browsers[id] = { browser, page: pages[0], profilePath };
+
     const page = pages[0] || (await browser.newPage());
     await page.setUserAgent(userAgent);
 
     // Authenticate with proxy if credentials provided
     if (proxy) {
       const [ip, port, username, password] = proxy.split(":");
-      console.log("PROXY BNE", proxy);
+    sendLogToRenderer(`✅ Có xử dụng Proxy : ${proxy}`);
       try {
-        await page.authenticate({ username, password });
+        if(username && password){
+          console.log("CO GOI XAC THUC ");  
+          await page.authenticate({ username, password });
+
+        }
       } catch (err) {
         sendLogToRenderer(
           `❌ Proxy chêt !!!! ${profileName}, bỏ qua profile này.`
@@ -166,7 +176,10 @@ export async function openChromeProfile({
 
     // Navigate to TikTok
 
-    await page.goto(link, { timeout: DEFAULT_TIMEOUT });
+    await page.goto(link, {
+      
+      waitUntil:"load",
+      timeout: DEFAULT_TIMEOUT });
 
     // Check for CAPTCHA
     // if (await detectCaptcha(page)) {
@@ -183,10 +196,14 @@ export async function openChromeProfile({
     // });
 
     // Save browser profile in memory
-    browsers[id].page = page;
+
+
+    // browsers[id].page = page;
 
     sendLogToRenderer(`✅ Đã mở profile : ${profileName}`);
     sendLogToRenderer(`--------------------------------`);
+        browsers[id] = { browser, page: page, profilePath };
+
 
     return id;
   } catch (err) {
@@ -215,7 +232,7 @@ export async function createChromeProfile(
   }
 
   // Find Chrome path
-  const edgePath = findEdgePath() || puppeteer.executablePath();
+  const edgePath = findChromePath() || puppeteer.executablePath();
   if (!edgePath) {
     throw new Error("Không thể tìm thấy Chrome hoặc Chromium trên máy.");
   }

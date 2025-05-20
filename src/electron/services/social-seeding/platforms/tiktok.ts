@@ -109,6 +109,7 @@ export class TiktokSeeding extends SocialSeeding {
       );
       if (!clickableDiv) throw new Error("❌ Clickable post button not found");
       await (clickableDiv as ElementHandle<Element>).click();
+       await this.sleep(1000)
       sendLogToRenderer(`✅ Comment thành công ở profile ${profileName} !`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
