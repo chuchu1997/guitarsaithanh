@@ -82,7 +82,7 @@ const useChromeStore = create(
             const result = await backend.openChromeWithProfile({
               id: targetProfile.id,
               profilePath: targetProfile.pathProfile,
-              totalProfile: totalProfile,
+              proxy: targetProfile.proxy,
               headless: headless,
 
               // targetProfile.id,

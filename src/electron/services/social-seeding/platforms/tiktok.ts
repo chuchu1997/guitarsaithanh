@@ -127,17 +127,7 @@ export class TiktokSeeding extends SocialSeeding {
         sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
         return; // Exit the function early
       }
-      await Promise.all(
-        batch.map((profile) =>
-          openChromeProfile({
-            id: profile.id,
-            profilePath: profile.profilePath,
-            proxy: profile.proxy,
-            headless: profile.headless,
-            link: params.link,
-          })
-        )
-      );
+
       for (const profile of batch) {
         if (getStopSeeding()) {
           sendLogToRenderer(`🛑 Đang đóng trình duyệt và dừng quá trình!`);
@@ -145,6 +135,13 @@ export class TiktokSeeding extends SocialSeeding {
           continue;
         }
         try {
+          await openChromeProfile({
+            id: profile.id,
+            profilePath: profile.profilePath,
+            proxy: profile.proxy,
+            headless: profile.headless,
+            link: params.link,
+          });
           await this.processProfile(profile.id, async (page, profileName) => {
             //
             if (params.link) {
@@ -214,6 +211,8 @@ export class TiktokSeeding extends SocialSeeding {
           })
         )
       );
+      this.sleep(1000);
+      console.log("CALL THIS");
 
       for (const [index, profile] of shuffledBatch.entries()) {
         if (getStopSeeding()) {
@@ -325,18 +324,15 @@ export class TiktokSeeding extends SocialSeeding {
           return; // Exit the function early
         }
 
-        await Promise.all(
-          shuffledBatch.map((profile) =>
-            openChromeProfile({
-              id: profile.id,
-              profilePath: profile.profilePath,
-              proxy: profile.proxy,
-              headless: profile.headless,
-              link: params.link,
-            })
-          )
-        );
         for (const [index, profile] of shuffledBatch.entries()) {
+          await openChromeProfile({
+            id: profile.id,
+            profilePath: profile.profilePath,
+            proxy: profile.proxy,
+            headless: profile.headless,
+            link: params.link,
+          });
+          console.log("CO PROXY !!!", profile.proxy);
           if (getStopSeeding()) {
             sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
             await closeBrowser(profile.id);

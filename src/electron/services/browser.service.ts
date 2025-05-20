@@ -43,7 +43,7 @@ export async function detectCaptcha(page: Page): Promise<boolean> {
     return captchaExists !== null;
   } catch (error) {
     console.error("Error detecting captcha:", error);
-    return false;
+    return true;
   }
 }
 
@@ -124,7 +124,7 @@ export async function openChromeProfile({
     // sendLogToRenderer(`🖥️ Đường dẫn chrome Exe: ${chromePath}`);
 
     // Launch browser
-    const edgePath = findEdgePath() || puppeteer.executablePath();
+    const edgePath = findChromePath() || puppeteer.executablePath();
 
     const browser = await puppeteer.launch({
       headless,
@@ -153,6 +153,7 @@ export async function openChromeProfile({
     // Authenticate with proxy if credentials provided
     if (proxy) {
       const [ip, port, username, password] = proxy.split(":");
+      console.log("PROXY BNE", proxy);
       try {
         await page.authenticate({ username, password });
       } catch (err) {
@@ -168,18 +169,18 @@ export async function openChromeProfile({
     await page.goto(link, { timeout: DEFAULT_TIMEOUT });
 
     // Check for CAPTCHA
-    if (await detectCaptcha(page)) {
-      sendLogToRenderer(
-        `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
-      );
-      await browser.close();
-      return "";
-    }
+    // if (await detectCaptcha(page)) {
+    //   sendLogToRenderer(
+    //     `❌ Đã phát hiện CAPTCHA trên profile ${profileName}, bỏ qua profile này.`
+    //   );
+    //   await browser.close();
+    //   return "";
+    // }
 
     // Wait for TikTok to load properly
-    await page.waitForSelector("div.TUXButton-iconContainer", {
-      visible: true,
-    });
+    // await page.waitForSelector("div.TUXButton-iconContainer", {
+    //   visible: true,
+    // });
 
     // Save browser profile in memory
     browsers[id].page = page;
