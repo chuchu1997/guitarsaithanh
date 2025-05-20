@@ -96,6 +96,7 @@ export async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
+      "--window-size=1280,800"
       // `--window-position=${x},${y}`,
     ];
 

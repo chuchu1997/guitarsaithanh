@@ -187,7 +187,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       id:select.id,
       profilePath:select.pathProfile,
       proxy:select.proxy,
-      headless:true
+      headless:false
       
     }))
     
