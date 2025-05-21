@@ -41,7 +41,7 @@ export class TiktokSeeding extends SocialSeeding {
    * Kiểm tra trạng thái dừng
    */
 
-  private async excuteShare (page: Page): Promise<void> {
+  private async excuteShare(page: Page): Promise<void> {
     try {
       //ĐỢI NÚT SHARE XUẤT HIỆN
       await page.waitForSelector(TIKTOK_CONSTANTS.SHARE_ICON_SELECTOR, {
@@ -57,14 +57,13 @@ export class TiktokSeeding extends SocialSeeding {
         visible: true,
         timeout: 3000,
       });
-      await this.sleep(1000)
+      await this.sleep(1000);
       await page.click(TIKTOK_CONSTANTS.SHARE_LINK_SELECTOR);
-      
+
       // SAU KHI SHARE XONG MOVE CURSOR RA NGOÀI ĐỂ TẮT DROPDOWN HOVER !!1
 
       await page.mouse.move(0, 0);
-            sendLogToRenderer(`✅ Đã share profile  !`);
-
+      sendLogToRenderer(`✅ Đã share profile  !`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       sendLogToRenderer(`❌ Share Action Error !!: ${message}`);
@@ -112,7 +111,7 @@ export class TiktokSeeding extends SocialSeeding {
       );
       if (!clickableDiv) throw new Error("❌ Clickable post button not found");
       await (clickableDiv as ElementHandle<Element>).click();
-       await this.sleep(1000)
+      await this.sleep(1000);
       sendLogToRenderer(`✅ Comment thành công ở profile ${profileName} !`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -125,12 +124,9 @@ export class TiktokSeeding extends SocialSeeding {
     const batchSize = 3;
     // MỖI LẦN XỬ LÝ 3 PROFILE THÔI !!!
     const batches = this.chunkArray(params.chromeProfiles, batchSize);
-      
-
-
 
     for (const batch of batches) {
-       await Promise.all(
+      await Promise.all(
         batch.map((profile) =>
           openChromeProfile({
             id: profile.id,
@@ -153,7 +149,6 @@ export class TiktokSeeding extends SocialSeeding {
           continue;
         }
         try {
-        
           await this.processProfile(profile.id, async (page, profileName) => {
             //
             if (params.link) {
@@ -163,7 +158,7 @@ export class TiktokSeeding extends SocialSeeding {
             sendLogToRenderer(
               `✅ Share Profile Thành Công !!!: "${profileName}"`
             );
-            await this.sleep(3000)
+            await this.sleep(3000);
             await closeBrowser(profile.id);
           });
         } catch (err) {
@@ -336,28 +331,19 @@ export class TiktokSeeding extends SocialSeeding {
 
           return; // Exit the function early
         }
+        await Promise.all(
+          shuffledBatch.map((profile) =>
+            openChromeProfile({
+              id: profile.id,
+              profilePath: profile.profilePath,
+              proxy: profile.proxy,
+              headless: profile.headless,
+              link: params.link,
+            })
+          )
+        );
 
         for (const [index, profile] of shuffledBatch.entries()) {
-
-           await Promise.all(
-        shuffledBatch.map((profile) =>
-          openChromeProfile({
-            id: profile.id,
-            profilePath: profile.profilePath,
-            proxy: profile.proxy,
-            headless: profile.headless,
-            link: params.link,
-          })
-        )
-      );
-
-          // await openChromeProfile({
-          //   id: profile.id,
-          //   profilePath: profile.profilePath,
-          //   proxy: profile.proxy,
-          //   headless: profile.headless,
-          //   link: params.link,
-          // });
           if (getStopSeeding()) {
             sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
             await closeBrowser(profile.id);
@@ -398,8 +384,7 @@ export class TiktokSeeding extends SocialSeeding {
               // Simulate processing time
               await this.sleep(params.delay * 1000);
             } catch (error) {
-
-              await closeBrowser(profile.id)
+              await closeBrowser(profile.id);
               sendLogToRenderer(`❌ Error with profile ${profile}: ${error}`);
             }
           }
@@ -432,7 +417,6 @@ export class TiktokSeeding extends SocialSeeding {
         }
       }
     }
-
   }
   sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
