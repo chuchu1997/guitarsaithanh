@@ -56,7 +56,7 @@ export async function openChromeProfile({
   proxy,
   // totalProfile = 1,
   headless = false,
-  link = "https://www.whatismyip.com",
+  link = "https://tiktok.com",
 }: ProfileParams): Promise<string> {
   const profileName = path.basename(profilePath);
   try {
