@@ -388,7 +388,7 @@ export class TiktokSeeding extends SocialSeeding {
               sendLogToRenderer(`❌ Error with profile ${profile}: ${error}`);
             }
           }
-          processedProfileCount++;
+          // processedProfileCount++;
 
           // Optional delay between batches if needed
           // if (batchNum < profileBatches.length - 1) {
@@ -398,14 +398,14 @@ export class TiktokSeeding extends SocialSeeding {
           // }
         }
 
-        if (processedProfileCount >= 10) {
-          sendLogToRenderer(
-            `⏱️ Đã xử lý 10 profile, đang đợi 60 giây trước khi tiếp tục...`
-          );
-          await this.sleep(60000);
+        // if (processedProfileCount >= 10) {
+        //   sendLogToRenderer(
+        //     `⏱️ Đã xử lý 10 profile, đang đợi 60 giây trước khi tiếp tục...`
+        //   );
+        //   await this.sleep(60000);
 
-          processedProfileCount = 0;
-        }
+        //   processedProfileCount = 0;
+        // }
         // Check if we've used all comments
         if (usedComments.size >= params.comments.length) {
           sendLogToRenderer(
