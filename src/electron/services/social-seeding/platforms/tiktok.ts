@@ -109,6 +109,7 @@ export class TiktokSeeding extends SocialSeeding {
       const clickableDiv = await postBtn.evaluateHandle((el) =>
         el.closest("div[tabindex='0']")
       );
+     await  this.sleep(1000)
       if (!clickableDiv) throw new Error("❌ Clickable post button not found");
       await (clickableDiv as ElementHandle<Element>).click();
       await this.sleep(1000);
