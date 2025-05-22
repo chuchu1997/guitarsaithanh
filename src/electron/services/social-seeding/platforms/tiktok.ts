@@ -191,6 +191,10 @@ export class TiktokSeeding extends SocialSeeding {
     const batchSize = 3;
     // MỖI LẦN XỬ LÝ 3 PROFILE THÔI !!!
     const batches = this.chunkArray(data.chromeProfiles, batchSize);
+
+    if(data.acceptDupplicateComment){
+      data.comments = shuffleArray(data.comments);
+    }
     for (const batch of batches) {
       if (getStopSeeding()) {
         sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
@@ -301,6 +305,9 @@ export class TiktokSeeding extends SocialSeeding {
     sendLogToRenderer(`🎯 Batch size: ${batchSize}`);
 
     // const batches = this.chunkArray(params.chromeProfiles, batchSize);
+      if(params.acceptDupplicateComment){
+      params.comments = shuffleArray(params.comments);
+    }
     while (commentIndex < totalComments) {
       if (getStopSeeding()) {
         sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
