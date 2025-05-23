@@ -36,6 +36,7 @@ const formSchema = z.object({
   proxy: z.string(),
   pathProfile: z.string(),
   isOpen: z.boolean().optional(),
+  cookie: z.string().optional(),
 });
 
 export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
@@ -63,6 +64,7 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
           username: "",
           proxy: "",
           pathProfile: settingStore.profilePath ?? "",
+          cookie: "",
         },
   });
 
@@ -71,6 +73,8 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     try {
+      console.log("HHEHE", values.cookie);
+
       setLoading(true);
       const profile: ChromeProfile = {
         isOpen: values.isOpen,
@@ -78,6 +82,7 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
         username: values.username,
         proxy: values.proxy.trim() ?? "",
         pathProfile: values.pathProfile,
+        cookie: values.cookie.trim() ?? "",
       };
 
       if (profile) {
@@ -165,6 +170,21 @@ export const ChromeProfileForm: React.FC<ChromeFormProps> = ({
                     placeholder="Nếu có thì nhập không thì thôi !!! "
                     {...field}
                   />
+                </FormControl>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="cookie"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cookie Tiktok </FormLabel>
+                <FormControl>
+                  <Input placeholder="Nhập Cookie" {...field} />
                 </FormControl>
 
                 <FormMessage />

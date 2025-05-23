@@ -52,6 +52,7 @@ const ChromeView = () => {
         username: generateMeaningfulUsername(i),
         proxy: "",
         pathProfile: settingStore.profilePath,
+        cookie: "",
       };
 
       // Không await, mà push vào mảng

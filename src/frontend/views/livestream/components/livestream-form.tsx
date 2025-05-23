@@ -217,16 +217,18 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       <h2 className="text-2xl font-bold text-gray-800 mb-2">
         Seeding Livestream ({liveTarget.name})
       </h2>
-
-      <DataTable
+    <div className = "max-h-[500px] overflow-x-hidden overflow-y-scroll">
+          <DataTable
+    
         onSelectionChange={(selected) => {
           console.log("Selected rows:", selected);
-
           setSelected(selected);
         }}
         searchKey="name"
         columns={columns}
         data={formatColumn}></DataTable>
+      </div>
+  
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

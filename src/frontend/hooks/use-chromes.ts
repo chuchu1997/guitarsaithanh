@@ -11,6 +11,7 @@ export interface ChromeProfile {
   proxy: string;
   pathProfile: string;
   isOpen: boolean;
+  cookie: string;
 }
 
 export interface ChromeStore {
@@ -82,6 +83,7 @@ const useChromeStore = create(
             const result = await backend.openChromeWithProfile({
               id: targetProfile.id,
               profilePath: targetProfile.pathProfile,
+              cookie: targetProfile.cookie,
               proxy: targetProfile.proxy,
               headless: headless,
 

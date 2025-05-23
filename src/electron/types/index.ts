@@ -12,6 +12,8 @@ export interface ProfileParams {
   proxy?: string;
   headless?: boolean;
   link?:string;
+  cookie?:string;
+  
 
 }
 

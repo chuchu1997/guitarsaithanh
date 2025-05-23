@@ -109,7 +109,7 @@ export class TiktokSeeding extends SocialSeeding {
       const clickableDiv = await postBtn.evaluateHandle((el) =>
         el.closest("div[tabindex='0']")
       );
-     await  this.sleep(1000)
+      await this.sleep(1000);
       if (!clickableDiv) throw new Error("❌ Clickable post button not found");
       await (clickableDiv as ElementHandle<Element>).click();
       await this.sleep(1000);
@@ -193,7 +193,7 @@ export class TiktokSeeding extends SocialSeeding {
     // MỖI LẦN XỬ LÝ 3 PROFILE THÔI !!!
     const batches = this.chunkArray(data.chromeProfiles, batchSize);
 
-    if(data.acceptDupplicateComment){
+    if (data.acceptDupplicateComment) {
       data.comments = shuffleArray(data.comments);
     }
     for (const batch of batches) {
@@ -300,13 +300,13 @@ export class TiktokSeeding extends SocialSeeding {
 
     // Log initial information
     const totalComments = params.comments.length;
-    let processedProfileCount = 0; // biến đếm profile đã xử lý
+    // let processedProfileCount = 0; // biến đếm profile đã xử lý
 
     sendLogToRenderer(`🎯 Total comments: ${totalComments}`);
     sendLogToRenderer(`🎯 Batch size: ${batchSize}`);
 
     // const batches = this.chunkArray(params.chromeProfiles, batchSize);
-      if(params.acceptDupplicateComment){
+    if (params.acceptDupplicateComment) {
       params.comments = shuffleArray(params.comments);
     }
     while (commentIndex < totalComments) {

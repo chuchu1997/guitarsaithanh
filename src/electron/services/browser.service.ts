@@ -54,13 +54,13 @@ export async function openChromeProfile({
   id,
   profilePath,
   proxy,
+  cookie,
   // totalProfile = 1,
   headless = false,
   link = "https://tiktok.com",
 }: ProfileParams): Promise<string> {
   const profileName = path.basename(profilePath);
   try {
-    console.log("PROXCY",proxy);
     // Clean lock files that might prevent browser from opening
     cleanLockFiles(profilePath);
 
@@ -96,7 +96,7 @@ export async function openChromeProfile({
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-blink-features=AutomationControlled",
-      "--window-size=1280,800"
+      "--window-size=1280,800",
       // `--window-position=${x},${y}`,
     ];
 
@@ -109,16 +109,14 @@ export async function openChromeProfile({
     //   args.push("--window-size=1280,800");
     // }
 
-
     // if (headless) {
     //   args.push(`--disable-gpu`);
     //   args.push(`--no-sandbox`);
     // }
-      if (proxy) {
+    if (proxy) {
       const proxyParts = proxy.split(":");
       args.push(`--proxy-server=http://${proxyParts[0]}:${proxyParts[1]}`);
     }
-
 
     sendLogToRenderer(`🖥️ Headless: ${headless ? "Có" : "Không"}`);
 
@@ -152,7 +150,7 @@ export async function openChromeProfile({
 
     // Get or create page
     const pages = await browser.pages();
-       browsers[id] = { browser, page: pages[0], profilePath };
+    browsers[id] = { browser, page: pages[0], profilePath };
 
     const page = pages[0] || (await browser.newPage());
     await page.setUserAgent(userAgent);
@@ -160,12 +158,10 @@ export async function openChromeProfile({
     // Authenticate with proxy if credentials provided
     if (proxy) {
       const [ip, port, username, password] = proxy.split(":");
-    sendLogToRenderer(`✅ Có xử dụng Proxy : ${proxy}`);
+      sendLogToRenderer(`✅ Có xử dụng Proxy : ${proxy}`);
       try {
-        if(username && password){
-          console.log("CO GOI XAC THUC ");  
+        if (username && password) {
           await page.authenticate({ username, password });
-
         }
       } catch (err) {
         sendLogToRenderer(
@@ -175,12 +171,13 @@ export async function openChromeProfile({
       }
     }
 
-    // Navigate to TikTok
+    await setCookieFromRawStringForTiktok(page, cookie);
 
+    // Navigate to TikTok
     await page.goto(link, {
-      
-      waitUntil:"load",
-      timeout: DEFAULT_TIMEOUT });
+      waitUntil: "load",
+      timeout: DEFAULT_TIMEOUT,
+    });
 
     // Check for CAPTCHA
     // if (await detectCaptcha(page)) {
@@ -198,13 +195,11 @@ export async function openChromeProfile({
 
     // Save browser profile in memory
 
-
     // browsers[id].page = page;
 
     sendLogToRenderer(`✅ Đã mở profile : ${profileName}`);
     sendLogToRenderer(`--------------------------------`);
-        browsers[id] = { browser, page: page, profilePath };
-
+    browsers[id] = { browser, page: page, profilePath };
 
     return id;
   } catch (err) {
@@ -216,6 +211,34 @@ export async function openChromeProfile({
     );
     return "";
   }
+}
+
+async function setCookieFromRawStringForTiktok(page: Page, rawCookie: string) {
+  if (!rawCookie || !rawCookie.trim()) {
+    console.log("❌ Cookie rỗng, không set gì cả.");
+    return;
+  }
+  const cookieString = rawCookie.split("|").pop(); // lấy phần sau cùng sau dấu "|"
+
+  const parsedCookies = cookieString.split(";").map((cookieStr) => {
+    const [name, ...rest] = cookieStr.trim().split("=");
+    return {
+      name: name.trim(),
+      value: rest.join("=").trim(),
+      domain: ".tiktok.com", // bạn có thể thay đổi nếu cần
+      path: "/",
+    };
+  });
+  sendLogToRenderer(`✅ Có cookie và đã set cookie rồi !!`);
+
+  await page.setCookie(...parsedCookies);
+  // const context = page.browserContext();
+  // await context.addCookies(parsedCookies);
+
+  // await page
+  //   .setCookie(...parsedCookies)
+  //   .then(() => console.log("✅ Cookie đã được set thành công"))
+  //   .catch((err) => console.error("❌ Lỗi khi set cookie:", err));
 }
 
 /**

@@ -40,6 +40,7 @@ const ChromeListView = () => {
         proxy: item.proxy,
         path: item.pathProfile,
         isOpen: item.isOpen,
+        cookie: item.cookie,
       }))
     );
   }, [items]);

@@ -17,6 +17,7 @@ export type ChromeColumn = {
   isOpen: boolean;
   proxy: string;
   path: string;
+  cookie: string;
 };
 
 export const columns: ColumnDef<ChromeColumn>[] = [
@@ -57,30 +58,36 @@ export const columns: ColumnDef<ChromeColumn>[] = [
     cell: ({ row }) => row.original.path,
   },
   {
-    accessorKey: "status",
-    header: "Trạng thái",
+    accessorKey: "cookie",
+    header: "Cookie",
     cell: ({ row }) => (
-      <>
-        {row.original.isOpen ? (
-          <div className="bg-gradient-to-r inline-block from-green-400 to-teal-500 text-white font-semibold text-sm py-1 px-4 rounded-lg italic shadow-sm transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md">
-            <div className="flex items-center gap-x-2 ">
-              <span>Đang mở</span> <CaptionsIcon size={18} />
-            </div>
-          </div>
-        ) : (
-          <div className="bg-gradient-to-r inline-block from-red-400 to-red-900 text-white font-semibold text-sm py-1 px-4 rounded-lg italic shadow-sm transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md">
-            <div className="flex items-center gap-x-2 ">
-              <span>Đang tắt</span> <CaptionsOffIcon size={18} />
-            </div>
-          </div>
-        )}
-      </>
+      <div className=" max-w-[100px] overflow-hidden text-ellipsis">
+        {row.original.cookie}
+      </div>
     ),
   },
   // {
-  //   id: "actions",
-  //   cell: ({ row }) => <CellAction data={row.original} />,
+  //   accessorKey: "status",
+  //   header: "Trạng thái",
+  //   cell: ({ row }) => (
+  //     <>
+  //       {row.original.isOpen ? (
+  //         <div className="bg-gradient-to-r inline-block from-green-400 to-teal-500 text-white font-semibold text-sm py-1 px-4 rounded-lg italic shadow-sm transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md">
+  //           <div className="flex items-center gap-x-2 ">
+  //             <span>Đang mở</span> <CaptionsIcon size={18} />
+  //           </div>
+  //         </div>
+  //       ) : (
+  //         <div className="bg-gradient-to-r inline-block from-red-400 to-red-900 text-white font-semibold text-sm py-1 px-4 rounded-lg italic shadow-sm transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md">
+  //           <div className="flex items-center gap-x-2 ">
+  //             <span>Đang tắt</span> <CaptionsOffIcon size={18} />
+  //           </div>
+  //         </div>
+  //       )}
+  //     </>
+  //   ),
   // },
+
   {
     header: "Thao tác",
     id: "actions",
