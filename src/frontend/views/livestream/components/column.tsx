@@ -10,6 +10,7 @@ export type LiveStreamColumn = {
   proxy: string;
   pathProfile: string;
   isOpen: boolean;
+  cookie:string;
 };
 
 export const columns: ColumnDef<LiveStreamColumn>[] = [

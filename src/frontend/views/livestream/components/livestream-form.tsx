@@ -82,6 +82,7 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       proxy: item.proxy,
       pathProfile: item.pathProfile,
       isOpen: item.isOpen,
+      cookie:item.cookie ?? ""
     }));
   
     // Only update state if the value has changed
@@ -158,12 +159,14 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
         id:select.id,
         profilePath:select.pathProfile,
         proxy:select.proxy,
-        headless:false
+        headless:false,
+        cookie:select.cookie
         
       }))
 
       await backend.seedingTiktokLiveStreamComments({
         comments: data.comments,
+        
         chromeProfiles: chromeProfiles,
         allowAutoCmtAfter60s:data.autoComment60s,
         acceptDupplicateComment:data.acceptDupplicateComment,
@@ -187,11 +190,11 @@ const LivestreamSeedingView = (props: LiveStreamPageProps) => {
       id:select.id,
       profilePath:select.pathProfile,
       proxy:select.proxy,
-      headless:false
+      headless:false,
+      cookie:select.cookie
       
     }))
     
-
 
     const liveLink = form.getValues("link");
     if (chromeProfiles.length > 0 && liveLink != "") {
