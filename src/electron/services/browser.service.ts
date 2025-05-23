@@ -214,9 +214,18 @@ export async function openChromeProfile({
 }
 
 async function setCookieFromRawStringForTiktok(page: Page, rawCookie: string) {
+  
+  
+  
   if (!rawCookie || !rawCookie.trim()) {
     console.log("❌ Cookie rỗng, không set gì cả.");
     return;
+  }
+  const checkCorrectCookie = rawCookie.split("|")
+  if(checkCorrectCookie.length < 2 ){
+
+
+    return ;
   }
   const cookieString = rawCookie.split("|").pop(); // lấy phần sau cùng sau dấu "|"
 
@@ -229,16 +238,9 @@ async function setCookieFromRawStringForTiktok(page: Page, rawCookie: string) {
       path: "/",
     };
   });
-  sendLogToRenderer(`✅ Có cookie và đã set cookie rồi !!`);
-
+  sendLogToRenderer(`✅ Có cookie hợp lệ và đang tiến hành gán !!`);
   await page.setCookie(...parsedCookies);
-  // const context = page.browserContext();
-  // await context.addCookies(parsedCookies);
 
-  // await page
-  //   .setCookie(...parsedCookies)
-  //   .then(() => console.log("✅ Cookie đã được set thành công"))
-  //   .catch((err) => console.error("❌ Lỗi khi set cookie:", err));
 }
 
 /**
