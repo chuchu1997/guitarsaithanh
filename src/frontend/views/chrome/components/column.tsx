@@ -52,16 +52,12 @@ export const columns: ColumnDef<ChromeColumn>[] = [
     header: "Sử dụng Proxy",
   },
 
-  {
-    accessorKey: "path",
-    header: "Đường dẫn của Profile",
-    cell: ({ row }) => row.original.path,
-  },
+ 
   {
     accessorKey: "cookie",
     header: "Cookie",
     cell: ({ row }) => (
-      <div className=" max-w-[100px] overflow-hidden text-ellipsis">
+      <div className=" max-w-[500px] overflow-hidden text-ellipsis">
         {row.original.cookie}
       </div>
     ),
