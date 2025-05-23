@@ -130,6 +130,7 @@ export class TiktokSeeding extends SocialSeeding {
       await Promise.all(
         batch.map((profile) =>
           openChromeProfile({
+            cookie:profile.cookie,
             id: profile.id,
             profilePath: profile.profilePath,
             proxy: profile.proxy,
@@ -216,6 +217,8 @@ export class TiktokSeeding extends SocialSeeding {
       await Promise.all(
         batch.map((profile) =>
           openChromeProfile({
+             cookie:profile.cookie,
+
             id: profile.id,
             profilePath: profile.profilePath,
             proxy: profile.proxy,
@@ -342,6 +345,7 @@ export class TiktokSeeding extends SocialSeeding {
         await Promise.all(
           shuffledBatch.map((profile) =>
             openChromeProfile({
+              cookie:profile.cookie,
               id: profile.id,
               profilePath: profile.profilePath,
               proxy: profile.proxy,
