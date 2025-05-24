@@ -213,10 +213,10 @@ export async function openChromeProfile({
   }
 }
 
+
+
+
 async function setCookieFromRawStringForTiktok(page: Page, rawCookie: string) {
-  
-  
-  
   if (!rawCookie || !rawCookie.trim()) {
     console.log("❌ Cookie rỗng, không set gì cả.");
     return;

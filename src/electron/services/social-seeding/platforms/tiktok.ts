@@ -26,6 +26,9 @@ const TIKTOK_CONSTANTS = {
 
   //NÚT COMMENTS Ở LIVESTREAM
   POST_BUTTON_SVG_PATH: 'svg path[d^="M45.7321 7.00001"]',
+
+  LOGIN_BUTTON_SELECTOR: "div[contains(text(), 'email')]",
+  LOGIN_BUTTON_XPATH: "//button[.//div[contains(text(), 'Đăng nhập')]]",
 };
 
 export class TiktokSeeding extends SocialSeeding {
@@ -40,6 +43,39 @@ export class TiktokSeeding extends SocialSeeding {
   /**
    * Kiểm tra trạng thái dừng
    */
+
+  async checkAuthTiktokLogin(page: Page): Promise<void> {
+    try {
+      sendLogToRenderer(`🛑 Có check auth !! !`);
+
+      const unLogin = await page.waitForSelector(
+        TIKTOK_CONSTANTS.LOGIN_BUTTON_XPATH,
+        {
+          visible: true,
+          timeout: 3000,
+        }
+      );
+      sendLogToRenderer(`🛑 Đã tìm thấy button login !! !`);
+
+      if (unLogin) {
+        await page.click(TIKTOK_CONSTANTS.LOGIN_BUTTON_XPATH);
+        const buttonLoginEmail = await page.waitForSelector(
+          TIKTOK_CONSTANTS.LOGIN_BUTTON_SELECTOR,
+          {
+            visible: true,
+            timeout: 1000,
+          }
+        );
+        sendLogToRenderer(`🛑 Phát hiện người dùng chưa đăng nhập !`);
+
+        if (buttonLoginEmail) {
+          await page.click(TIKTOK_CONSTANTS.LOGIN_BUTTON_SELECTOR);
+        }
+      }
+    } catch (e) {
+      // Có thể tiếp tục hành động khác ở đây
+    }
+  }
 
   private async excuteShare(page: Page): Promise<void> {
     try {
@@ -130,7 +166,7 @@ export class TiktokSeeding extends SocialSeeding {
       await Promise.all(
         batch.map((profile) =>
           openChromeProfile({
-            cookie:profile.cookie,
+            cookie: profile.cookie,
             id: profile.id,
             profilePath: profile.profilePath,
             proxy: profile.proxy,
@@ -217,7 +253,7 @@ export class TiktokSeeding extends SocialSeeding {
       await Promise.all(
         batch.map((profile) =>
           openChromeProfile({
-            cookie:profile.cookie,
+            cookie: profile.cookie,
             id: profile.id,
             profilePath: profile.profilePath,
             proxy: profile.proxy,
@@ -257,12 +293,14 @@ export class TiktokSeeding extends SocialSeeding {
         }
         await this.processProfile(profile.id, async (page, profileName) => {
           // NẾU CHƯA ĐI ĐẾN ĐƯỜNG DẪN THÌ ĐI ĐẾN
+          await this.checkAuthTiktokLogin(page);
           if (data.link) {
             await this.navigateIfNeeded(page, data.link);
           }
           await this.enterCommentAndSubmit(page, comment, profileName);
           usedComments.add(comment);
-          await closeBrowser(profile.id);
+          //FIXME:
+          // await closeBrowser(profile.id);
           const isLastProfile = index === shuffledBatch.length - 1;
           const isLastBatch = batches.at(-1)?.includes(profile);
 
@@ -344,7 +382,7 @@ export class TiktokSeeding extends SocialSeeding {
         await Promise.all(
           shuffledBatch.map((profile) =>
             openChromeProfile({
-              cookie:profile.cookie,
+              cookie: profile.cookie,
               id: profile.id,
               profilePath: profile.profilePath,
               proxy: profile.proxy,
