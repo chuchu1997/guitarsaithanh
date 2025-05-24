@@ -222,8 +222,9 @@ async function setCookieFromRawStringForTiktok(page: Page, rawCookie: string) {
     return;
   }
   const checkCorrectCookie = rawCookie.split("|")
-  if(checkCorrectCookie.length < 2 ){
 
+  if(checkCorrectCookie.length < 3 ){
+      sendLogToRenderer(`✅ RETURN ${checkCorrectCookie}`,);
 
     return ;
   }
