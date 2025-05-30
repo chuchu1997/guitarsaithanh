@@ -2,8 +2,8 @@ import { app, BrowserWindow } from "electron";
 
 import "./api";
 // import squirrelStartup from "electron-squirrel-startup"; // Import electron-squirrel-startup
-import { spawn } from 'child_process';
-import * as path from 'path';
+import { spawn } from "child_process";
+import * as path from "path";
 
 // if (squirrelStartup) {
 //   app.quit(); // Quit the app immediately if it's an installer process
@@ -12,29 +12,33 @@ import * as path from 'path';
 // this should be placed at top of main.js to handle setup events quickly
 if (handleSquirrelEvent()) {
   // squirrel event handled and app will exit in 1000ms, so don't do anything else
-  app.quit()
+  app.quit();
 }
 function handleSquirrelEvent(): boolean {
   if (process.argv.length === 1) return false;
 
   const squirrelEvent = process.argv[1];
-  const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
+  const updateExe = path.resolve(
+    path.dirname(process.execPath),
+    "..",
+    "Update.exe"
+  );
 
   const spawnUpdate = (args: string[]) => {
     spawn(updateExe, args, { detached: true });
   };
 
   switch (squirrelEvent) {
-    case '--squirrel-install':
-    case '--squirrel-updated':
-      spawnUpdate(['--createShortcut', path.basename(process.execPath)]);
+    case "--squirrel-install":
+    case "--squirrel-updated":
+      spawnUpdate(["--createShortcut", path.basename(process.execPath)]);
       setTimeout(app.quit, 1000);
       return true;
-    case '--squirrel-uninstall':
-      spawnUpdate(['--removeShortcut', path.basename(process.execPath)]);
+    case "--squirrel-uninstall":
+      spawnUpdate(["--removeShortcut", path.basename(process.execPath)]);
       setTimeout(app.quit, 1000);
       return true;
-    case '--squirrel-obsolete':
+    case "--squirrel-obsolete":
       app.quit();
       return true;
   }
@@ -42,16 +46,16 @@ function handleSquirrelEvent(): boolean {
   return false;
 }
 
-
-
-
 const createWindow = async () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
+    resizable: false,
+    maximizable: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: true,
     },
   });
 

@@ -17,18 +17,19 @@ export const backend = {
       profilePath,
     });
   },
-  openChromeWithProfile: async (
-  params:ProfileParams
-  ): Promise<string> => {
+
+  autoFillLogin: async (params: BaseSeeding) => {
+    return await ipcRenderer.invoke("auto-fill-login", params);
+  },
+  openChromeWithProfile: async (params: ProfileParams): Promise<string> => {
     // Truyền tham số dưới dạng đối tượng
-    console.log("CALL NE ",params);
+
     return await ipcRenderer.invoke("open-chrome-profile", params);
   },
 
   closeChrome: async (id: string): Promise<boolean> => {
     return await ipcRenderer.invoke("close-chrome-profile", id);
   },
- 
 
   loadAudio: async (path: string): Promise<string> => {
     return await ipcRenderer.invoke("load-audio", path);
@@ -41,24 +42,23 @@ export const backend = {
   //   return await ipcRenderer.invoke("share-livestream",{chromeIDS,linkLive})
   //   // return await ipcRenderer.invoke("close-chrome-profile", id);
   // },
-  seedingTiktokLiveStreamShare : async (params:BaseSeeding)=>{
-    await ipcRenderer.invoke("seeding-share-livestream-tiktok",params)
+  seedingTiktokLiveStreamShare: async (params: BaseSeeding) => {
+    await ipcRenderer.invoke("seeding-share-livestream-tiktok", params);
   },
-  seedingTiktokLiveStreamComments: async (params:SeedingCommentParams):Promise<void>=>{
-    await ipcRenderer.invoke("seeding-comments-livestream-tiktok",params)
+  seedingTiktokLiveStreamComments: async (
+    params: SeedingCommentParams
+  ): Promise<void> => {
+    await ipcRenderer.invoke("seeding-comments-livestream-tiktok", params);
   },
   stopSeeding: async (): Promise<void> => {
     await ipcRenderer.invoke("stop-seeding");
   },
-  
+
   onLogUpdate: (callback: (log: string) => void): void => {
     ipcRenderer.on("update-log", (_event, log) => {
       callback(log);
     });
   },
- 
-
-
 
   onListenCloseChromeByUser: (
     callback: (driverIdClose: string) => void
@@ -67,7 +67,6 @@ export const backend = {
       callback(driverIdClose);
     });
   },
-  
 };
 
 contextBridge.exposeInMainWorld("backend", backend);

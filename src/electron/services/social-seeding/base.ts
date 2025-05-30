@@ -8,7 +8,11 @@ import {
   detectCaptcha,
   getBrowserProfile,
 } from "../browser.service";
-import { SeedingCommentParams, ShareParams } from "src/electron/types";
+import {
+  BaseSeeding,
+  SeedingCommentParams,
+  ShareParams,
+} from "src/electron/types";
 
 /// SETTING CHỜ MỞ CŨNG NHƯ THAO TÁC CHO PUPPER VỚI PAGE !!!
 export const COMMON_CONSTANTS = {
@@ -88,6 +92,7 @@ export abstract class SocialSeeding {
       return null;
     }
   }
+  abstract autoFillLogin(params: BaseSeeding): Promise<void>;
 
   abstract shareContent(params: ShareParams): Promise<void>;
 

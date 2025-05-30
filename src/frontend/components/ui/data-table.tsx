@@ -100,10 +100,10 @@ export function DataTable<TData, TValue>({
   };
 
   // Reset lựa chọn khi dữ liệu thay đổi
-  React.useEffect(() => {
-    setRowSelection({});
-    lastSelectedIndexRef.current = null;
-  }, [data]);
+  // React.useEffect(() => {
+  //   setRowSelection({});
+  //   lastSelectedIndexRef.current = null;
+  // }, [data]);
 
   return (
     <div>
@@ -144,7 +144,8 @@ export function DataTable<TData, TValue>({
                   onClick={(event) => handleRowClick(event, index)}
                   className={`cursor-pointer ${
                     row.getIsSelected() ? "bg-gray-100" : ""
-                  }`}>
+                  }`}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
@@ -159,7 +160,8 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center">
+                  className="h-24 text-center"
+                >
                   Chưa có thông tin !!
                 </TableCell>
               </TableRow>

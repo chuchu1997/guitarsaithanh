@@ -24,7 +24,7 @@ export interface ChromeStore {
     id: string,
     totalProfile?: number,
     headless?: boolean
-  ) => void;
+  ) => Promise<void>;
   closeChromeProfile: (id: string) => Promise<void>;
   closeChromeProfileManual: (id: string) => void;
 
@@ -72,7 +72,7 @@ const useChromeStore = create(
         id: string,
         totalProfile?: number,
         headless?: boolean
-      ) => {
+      ): Promise<void> => {
         const store = get();
         const targetProfile = store.items.find((item) => item.id === id);
 
@@ -100,8 +100,6 @@ const useChromeStore = create(
               isOpen: result != "" ? true : false,
             };
             store.updateItem(updatedProfile); // 👈 trigger update
-
-            return updatedProfile;
           }
         } catch (err) {
           updatedProfile = { ...targetProfile, isOpen: false };

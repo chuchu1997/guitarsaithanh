@@ -157,6 +157,45 @@ export class TiktokSeeding extends SocialSeeding {
     }
   }
 
+  async autoFillLogin(params: BaseSeeding): Promise<void> {
+    const { chromeProfiles, link } = params;
+
+    await openChromeProfile({
+      cookie: chromeProfiles[0].cookie,
+      id: chromeProfiles[0].id,
+      profilePath: chromeProfiles[0].profilePath,
+      proxy: chromeProfiles[0].proxy,
+      headless: chromeProfiles[0].headless,
+      link: params.link,
+    });
+
+    if (getStopSeeding()) {
+      sendLogToRenderer(`🛑 Đã dừng quá trình seeding theo yêu cầu!`);
+      return; // Exit the function early
+    }
+
+    try {
+      await this.processProfile(
+        chromeProfiles[0].id,
+        async (page, profileName) => {
+          if (params.link) {
+            await this.navigateIfNeeded(page, params.link);
+
+            await this.onFillCookieToLogin(chromeProfiles[0].cookie ?? "");
+
+            await this.sleep(3000);
+          }
+        }
+      );
+      return;
+    } catch (err) {}
+  }
+  async onFillCookieToLogin(cookie: string) {
+    if (cookie !== "") {
+      /// EXCUTE !!!
+    }
+  }
+
   async shareContent(params: BaseSeeding): Promise<void> {
     const batchSize = 3;
     // MỖI LẦN XỬ LÝ 3 PROFILE THÔI !!!

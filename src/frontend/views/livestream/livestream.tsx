@@ -25,7 +25,6 @@ const LivestreamSeedingView = () => {
   const [newName, setNewName] = useState("");
 
   const handleCreate = () => {
-    console.log("CALL FOR THIS !!");
     if (newName.trim() !== "") {
       // addLiveStream({ id: crypto.randomUUID(), name: newName });
       addItem({

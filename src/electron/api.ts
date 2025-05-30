@@ -52,6 +52,22 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+  "auto-fill-login",
+  async (_event: IpcMainInvokeEvent, params: BaseSeeding) => {
+    try {
+      const TiktokSeeding = createSeedingService("tiktok");
+      await TiktokSeeding.autoFillLogin(params);
+
+      // await TiktokSeeding.shareContent(params);
+    } catch (error) {
+      sendLogToRenderer(
+        `❌ Lỗi khi chạy seeding shares : ${(error as Error).message}`
+      );
+    }
+  }
+);
+
+ipcMain.handle(
   "seeding-comments-livestream-tiktok",
   async (_event: IpcMainInvokeEvent, params: SeedingCommentParams) => {
     try {

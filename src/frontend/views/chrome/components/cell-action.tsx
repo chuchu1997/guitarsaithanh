@@ -27,6 +27,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     navigator.clipboard.writeText(data.id);
     toast.success("Copy ID Thành Công");
   };
+
   const onEdit = () => {
     navigate(`/chrome/edit/${data.id}`);
   };
@@ -40,6 +41,22 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     toast.success("Đã xóa profile");
     navigate("/chrome");
   };
+  const onAutoFillLogin = async () => {
+    await backend.autoFillLogin({
+      startSeeding: true,
+      chromeProfiles: [
+        {
+          id: data.id,
+          profilePath: data.path,
+          proxy: data.proxy,
+          headless: false,
+          cookie: data.cookie,
+        },
+      ],
+      link: "https://tiktok.com",
+    });
+  };
+
   const onOpenChrome = async () => {
     await chromeStore.openChromeProfile(data.id, 1, false);
   };
@@ -63,6 +80,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         onCloseChrome={onCloseChrome}
         onCopy={onCopy}
         onEdit={onEdit}
+        onAutoFillLogin={onAutoFillLogin}
         onDelete={onDelete}
         onOpenDeleteModal={() => setOpen(true)}
       />
